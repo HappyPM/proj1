@@ -5,7 +5,6 @@ from BeautifulSoup import BeautifulSoup
 from pymongo import MongoClient
 
 
-
 def get_sector(soup):
     cominfo = soup.find('table', {'id':'comInfo'}).findAll('span', {'class':'exp'})[1].text[7:]
     return cominfo
