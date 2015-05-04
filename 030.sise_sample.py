@@ -1,10 +1,9 @@
 #-*- coding: utf-8 -*-
 #http://finance.naver.com/item/frgn.nhn?code=014530&page=1
 
-import requests
-import json
 from bs4 import BeautifulSoup
 import copy
+import urllib2
 
 print('Hello World');
 
@@ -21,6 +20,8 @@ gnDataOffsetSize        = gnTableType0Size; # Data 필드 개수
 
 gnPageLoopCount = 5;                         # 취합할 Page 개수
 
+
+
 def MakeTable(nPageEntry, gastTable):
     stAppendEntry = [];                     # Append 구조체
     nTableAppend = 0;                       # Table 필드 명 취합을 위해 사용
@@ -33,12 +34,18 @@ def MakeTable(nPageEntry, gastTable):
         stAppendEntry.append(0);
 
     nPageIndex = nPageEntry + 1;
+
+    opener = urllib2.build_opener()
+    opener.addheaders = [('User-agent', 'Mozilla/5.0')]                 # header define
+
     nUrl = "http://finance.naver.com/item/frgn.nhn?code=" + gnStockCode + "&page=" + str(nPageIndex);
-
-    stRequest = requests.get(nUrl);
-    stSoup = BeautifulSoup(stRequest.text);
-
+    response = opener.open(nUrl)
+    page = response.read()    
+    
+    stSoup = BeautifulSoup(page);
     stFindAll = stSoup.findAll(gnStrFindAll);
+
+    
     stSelectTableText = stFindAll[gnSelectTableFindAll].text;
     stSplitText = stSelectTableText.split("\n");
 
