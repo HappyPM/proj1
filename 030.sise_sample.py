@@ -1,5 +1,5 @@
 #-*- coding: utf-8 -*-
-#http://finance.naver.com/item/frgn.nhn?code=014530&page=1
+#http://finance.naver.com/item/frgn.nhn?code=014530&page=1  hello
 
 from bs4 import BeautifulSoup
 import copy
