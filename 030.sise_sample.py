@@ -1,11 +1,9 @@
 #-*- coding: utf-8 -*-
-#http://finance.naver.com/item/frgn.nhn?code=014530&page=1  hello
+#http://finance.naver.com/item/frgn.nhn?code=014530&page=1
 
 from bs4 import BeautifulSoup
 import copy
 import urllib2
-
-print('Hello World');
 
 # page
 gnStockCode             = '014530';         # 주식 코드 번호
@@ -18,17 +16,17 @@ gnTableType1LoopCount   = 15;               # Table -> Data 로 전환하기 위
 gnDataOffsetSize        = gnTableType0Size; # Data 필드 개수
 
 
-gnPageLoopCount = 5;                         # 취합할 Page 개수
+gnPageLoopCount = 5;                        # 취합할 Page 개수
 
 
 
 def MakeTable(nPageEntry, gastTable):
-    stAppendEntry = [];                     # Append 구조체
-    nTableAppend = 0;                       # Table 필드 명 취합을 위해 사용
-    nTableOffset = 0;                       # Table 필드 명 취합을 위해 사용
-    nDataOffset = 0;                        # Data 필드 취합을 위해 사용
-    nType = 0;                              # 현재 취합하는 Type (Table 필드명 or Data)
-    bAppendData = 0;                        # Data 취합이 완료되었는지 여부
+    stAppendEntry   = [];                   # Append 구조체
+    nTableAppend    = 0;                    # Table 필드 명 취합을 위해 사용
+    nTableOffset    = 0;                    # Table 필드 명 취합을 위해 사용
+    nDataOffset     = 0;                    # Data 필드 취합을 위해 사용
+    nType           = 0;                    # 현재 취합하는 Type (Table 필드명 or Data)
+    bAppendData     = 0;                    # Data 취합이 완료되었는지 여부
 
     for nTableIndex in range(gnTableType0Size): # Append할 구조체 크기 설정
         stAppendEntry.append(0);
@@ -40,12 +38,11 @@ def MakeTable(nPageEntry, gastTable):
 
     nUrl = "http://finance.naver.com/item/frgn.nhn?code=" + gnStockCode + "&page=" + str(nPageIndex);
     response = opener.open(nUrl)
-    page = response.read()    
-    
+    page = response.read()
+
     stSoup = BeautifulSoup(page);
     stFindAll = stSoup.findAll(gnStrFindAll);
 
-    
     stSelectTableText = stFindAll[gnSelectTableFindAll].text;
     stSplitText = stSelectTableText.split("\n");
 
