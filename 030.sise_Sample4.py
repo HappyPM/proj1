@@ -28,7 +28,7 @@ else:
     gstDataInfor            = pd.read_csv(StringIO(gstRequest.content), index_col='Date', parse_dates={'Date'});
 
 
-# Date & 가격을 얻는 함수 (코스피 / 코스닥 / 일반종복 가능)
+# Date & 가격을 얻는 함수 (코스피 / 코스닥 / 일반종목 가능)
 def SISE_GetStockInfor(stDataInfor, astStockInfor, nStockCode):
     for nIndex in range(stDataInfor.shape[0]):
         stStock             = {};
