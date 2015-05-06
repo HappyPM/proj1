@@ -6,7 +6,7 @@ import pandas.io.data as web;
 from StringIO import StringIO;
 import datetime;
 
-# 코스피 or 코스닥 선택
+# 코스피 or 코스닥 or 일반종목 선택
 #gnStockCode             = 'KOSPI';      # '1997-07-01' ~
 #gnStockCode             = 'KOSDAQ';     # '2013-03-04' ~
 gnStockCode             = '014530';     # '2000-01-01' ~
