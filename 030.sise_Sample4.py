@@ -1,4 +1,4 @@
-#-*- coding: utf-8 -*-
+﻿#-*- coding: utf-8 -*-
 
 import requests;
 import pandas as pd;
@@ -9,7 +9,7 @@ import datetime;
 # 코스피 or 코스닥 선택
 #gnStockCode             = 'KOSPI';      # '1997-07-01' ~
 #gnStockCode             = 'KOSDAQ';     # '2013-03-04' ~
-gnStockCode             = '014530';     # '2000-0101' ~
+gnStockCode             = '014530';     # '2000-01-01' ~
 
 gastStockInfor          = [];
 gstDataInfor            = {};
