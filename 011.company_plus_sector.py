@@ -1,6 +1,7 @@
+#-*- coding: utf-8 -*-
 import requests
-import json
-from bs4 import BeautifulSoup
+from BeautifulSoup import BeautifulSoup # 왜 난 from bs4가 안되나.....??
+from pymongo import MongoClient
 
 # requests HTML, get document 
 url = "http://www.krx.co.kr/por_kor/popup/JHPKOR13008.jsp"
@@ -19,22 +20,8 @@ for tr in trs[1:]:
     cols = tr.findAll('td')
     stock['code'] = cols[0].text[1:]
     stock['name'] = cols[1].text.replace(";", "")
-    stock['full_code'] = cols[2].text
+    #stock['full_code'] = cols[2].text
     stock_list.append(stock)
-
-# list save to JSON format
-j = json.dumps(stock_list)
-with open('./krx_symbols.json', 'w') as f:
-    f.write(j)
-
-# review the saved file
-fn = 'krx_symbols.json'
-with open(fn, 'r') as f:
-    stock_list = json.load(f)
-
-# Test print
-#for s in stock_list[:10]:
-#    print s['full_code'], s['code'][1:], s['name']
 
 
 # find sector info and add to the list
@@ -53,17 +40,18 @@ def findSectorInfo(company):
 
 
 stock_sector_list = []
-for s in stock_list[:10]:
-    newStock = {}
-    newStock['code'] = s['code']
-    newStock['name'] = s['name']
-    newStock['full_code'] = s['full_code']
-    newStock['sector'] = findSectorInfo(s['code'])
-    stock_sector_list.append(newStock)
+for s in stock_list[1:]:
+    s['sector'] = findSectorInfo(s['code'])
 
-# Test print
-for s in stock_sector_list[:10]:
-     print s['full_code'], s['code'][1:], s['name'], s['sector']
+    
+#for s in stock_list[1:]:
+#    print s
 
+
+client = MongoClient()
+db = client.hpm
+coll = db.company
+
+coll.insert(stock_list)
 
 
