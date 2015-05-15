@@ -1,13 +1,12 @@
 #-*- coding: utf-8 -*-
 import requests
 import json
-from BeautifulSoup import BeautifulSoup
 from pymongo import MongoClient
+try:
+    from BeautifulSoup import BeautifulSoup 
+except ImportError:
+    from bs4 import BeautifulSoup              # exception  import 
 
-
-def get_sector(soup):
-    cominfo = soup.find('table', {'id':'comInfo'}).findAll('span', {'class':'exp'})[1].text[7:]
-    return cominfo
 
 def get_days_to_json(soup):
     script = soup.findAll('script')[4].string
@@ -40,6 +39,7 @@ data = get_data_to_json(soup)
 
               
 
+# embedded document 구조로 저장하기 
 finance_list = [];
 finance  = {};
 finance["code"] = code
