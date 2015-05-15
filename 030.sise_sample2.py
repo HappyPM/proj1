@@ -11,11 +11,11 @@ gnEndDay                = '2010.01.01'      # 이 날짜까지 데이터 구함
 gnPageLoopCount         = 100;              # 취합할 Page 개수, 100개 이네에서 날짜에 걸려서 종료됨.
 
 
-gnStockPric = []                            # DB에 insert할 list
+gnStockPricDays = []                            # DB에 insert할 list
 gnTableFirstDay = '';                       # 과거날짜 -> loop 종료용 
 
 
-def MakeTable(nPageEntry):
+def MakeTable(nCode, nPageEntry):
     
     global gnTableFirstDay
 
@@ -24,7 +24,7 @@ def MakeTable(nPageEntry):
     opener = urllib2.build_opener()
     opener.addheaders = [('User-agent', 'Mozilla/5.0')]                 # header define
 
-    nUrl = "http://finance.naver.com/item/frgn.nhn?code=" + gnStockCode + "&page=" + str(nPageIndex);
+    nUrl = "http://finance.naver.com/item/frgn.nhn?code=" + nCode + "&page=" + str(nPageIndex);
     response = opener.open(nUrl)
     page = response.read()
 
@@ -41,25 +41,28 @@ def MakeTable(nPageEntry):
     for stSoupDay in stSoupDays:
         stItems = stSoupDay.findAll('td')
         stStockPric = {}
-        stStockPric['code'] = gnStockCode
+        #stStockPric['code'] = nCode
         stStockPric['day']  = stItems[0].text
         stStockPric['pric'] = stItems[1].text.replace(',', '')
         if gnEndDay > stStockPric['day'] : # 최종날짜 체크함 
             return False        
-        gnStockPric.append(stStockPric)
+        gnStockPricDays.append(stStockPric)
 
     return True        
 
 
-for nPageIndex in range(100):
-    if MakeTable(nPageIndex) == False :
+for nPageIndex in range(3):
+    if MakeTable(gnStockCode, nPageIndex) == False :
         break;
 
-#print gnStockPric
+
+siseDoc = {}
+siseDoc['code'] = gnStockCode
+siseDoc['days'] = gnStockPricDays # embedded document 구조로 저장하기 
 
 
 client = MongoClient()      # MongoDB 
 db = client.hpm             # hpm dbs
 coll = db.sise              # sise collection
-coll.insert(gnStockPric)
+coll.insert(siseDoc)
 
