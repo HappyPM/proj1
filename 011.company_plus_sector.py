@@ -1,6 +1,7 @@
 #-*- coding: utf-8 -*-
 import requests
 from BeautifulSoup import BeautifulSoup # 왜 난 from bs4가 안되나.....??
+#from bs4 import BeautifulSoup
 from pymongo import MongoClient
 
 # requests HTML, get document 
@@ -27,7 +28,7 @@ for tr in trs[1:]:
 # find sector info and add to the list
 sectorBaseUrl = "http://finance.naver.com/item/main.nhn?code="
 
-def findSectorInfo(company):
+def findSectorMarketTypeInfo(company):
     response = requests.get(sectorBaseUrl + company);
     soup = BeautifulSoup(response.text)
     #print(sectorBaseUrl + company)
@@ -36,22 +37,34 @@ def findSectorInfo(company):
     h4 = soup.find('h4', {'class':'h_sub sub_tit7'})
     if h4 is not None:
         sector = h4.a.text
-    return sector
-
+        
+    marketType = ""
+    marketTypeKospi = soup.find('img', {'class':'kospi'})
+    marketTypeKosdaq = soup.find('img', {'class':'kosdaq'})
+     
+    if marketTypeKospi is not None:
+        marketType = 'kospi'
+    elif marketTypeKosdaq is not None:
+        marketType = 'kosdaq'
+    else:
+        marketType = "none"
+                
+    return sector,marketType
+    
 
 stock_sector_list = []
 for s in stock_list[1:]:
-    s['sector'] = findSectorInfo(s['code'])
+    sector,mtype = findSectorMarketTypeInfo(s['code'])
+    s['sector'] = sector
+    s['marketType'] = mtype
 
-    
-#for s in stock_list[1:]:
+   
+#for s in stock_list[1:15]:
 #    print s
 
-
+ 
 client = MongoClient()
 db = client.hpm
 coll = db.company
 
 coll.insert(stock_list)
-
-
