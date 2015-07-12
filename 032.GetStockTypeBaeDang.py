@@ -527,7 +527,7 @@ def SISE_GetKospiInfor(astKospiInfor):
 
 ############# main #############
 
-gnMaxBaeDangStockCount = 2;
+gnMaxBaeDangStockCount = 500;
 
 # Kospi 정보 취합
 SISE_GetKospiInfor(gastKospiInfor);
