@@ -91,50 +91,53 @@ def get_days_to_json(soup):
     day = script.split("changeFin = ", 1)[1].split(";",1)[0]
     soup = BeautifulSoup(day)
     day = soup.text
-    day = json.loads(day)
+    day = json.loads(day)    
     return day
+
 
 def get_data_to_json(soup):
     script = soup.findAll('script')[4].string
     data = script.split("changeFinData = ", 1)[1].split(";",1)[0]
-    data = json.loads(data)
+    data = json.loads(data)    
     return data
 
-def set_year_and_quater(days, data, year_data_list, quater_data_list):
+def set_year_and_quater(days, data, year_data_list, quater_data_list) :
+        
     year_day = days[0]
     quater_day = days[1]
-
+    
     for data1 in data:
-
-        yy_dat = data1[0]
-        qt_dat = data1[1]
-
+        
+        yy_dat = data1[0]    
+        qt_dat = data1[1]    
+    
         jj = 0
         for yy_dat1 in yy_dat:
-
+            
             dnam = yy_dat1[0]
-
+            
             qt_dat1 = qt_dat[jj]
             jj = jj + 1
-
-            ii = 0
+    
+            ii = 0            
             for yy_dat2 in yy_dat1[1:]:
-                qt_dat2 = qt_dat1[ii]
-
+                #print len(qt_dat1[ii])
+                qt_dat2 = qt_dat1[ii]                
+                
                 year_data = {}            
                 year_data["day"] = year_day[ii]
                 year_data["item_name"] = dnam
                 year_data["item_value"] = yy_dat2.replace(',', '')
                 year_data_list.append(year_data);
-
-                quater_data = {}
+                    
+                quater_data = {}            
                 quater_data["day"] = quater_day[ii]
                 quater_data["item_name"] = dnam
                 quater_data["item_value"] = qt_dat2.replace(',', '')
-
+                
                 #print quater_data
                 quater_data_list.append(quater_data);
-
+                
                 ii = ii + 1;
 
 gastYearDataList = [];
@@ -161,15 +164,6 @@ def COMPANY_GetFinance(ncode, astYearDataList, astQuaterDataList):
     set_year_and_quater(stDays, stData, astYearDataList, astQuaterDataList);
 
 def GetSplitTitle(stString):
-#    stString = stString.split(u"(지배)")[0];
-#    stString = stString.split(u"(비지배)")[0];
-#    stString = stString.split(u"(%)")[0];
-#    stString = stString.split(u"(원)")[0];
-#    stString = stString.split(u"(배)")[0];
-#    stString = stString.split(u"(보통주)")[0];
-#    stString = stString.split(u"활동현금흐름")[0];
-#    stString = stString.split(u"계속사업이익")[0];
-#    stString = stString.split(u"발생부채")[0];
     stString = stString.split(u"(IFRS연결)")[0];
     stString = stString.split(u"(IFRS별도)")[0];
     return stString;
@@ -199,24 +193,30 @@ def COMPANY_GetStockFinanceInfor(nName, nCode, astStockInfor):
     stStockInfor['WICS'] = stSplit300[1];
 
     stSplit301 = stSplit30[1].split(u'\xa0');
-    stStockInfor['EPS'] = stSplit301[0];
+    stStockInfor['EPS'] = stSplit301[0].replace(',', '');
+    stStockInfor['EPS'] = stStockInfor['EPS'].replace(' ', '');
 
     stSplit31 = stSplit3[1].split(u'\xa0');
     stSplit311 = stSplit31[1].split(' ');
-    stStockInfor['BPS'] = stSplit311[1];
+    stStockInfor['BPS'] = stSplit311[1].replace(',', '');
+    stStockInfor['BPS'] = stStockInfor['BPS'].replace(' ', '');
 
     stSplit32 = stSplit3[2].split(u'\xa0');
     stSplit321 = stSplit32[1].split(' ');
-    stStockInfor['PER'] = stSplit321[1];
+    stStockInfor['PER'] = stSplit321[1].replace(',', '');
+    stStockInfor['PER'] = stStockInfor['PER'].replace(' ', '');
 
     stSplit34 = stSplit3[4].split(u'\xa0');
     stSplit341 = stSplit34[1].split(' ');
-    stStockInfor['PBR'] = stSplit341[1];
+    stStockInfor['PBR'] = stSplit341[1].replace(',', '');
+    stStockInfor['PBR'] = stStockInfor['PBR'].replace(' ', '');
 
     stSplit35 = stSplit3[5].split(u'\xa0');
     stSplit351 = stSplit35[1].split(' ');
     stSplit3511 = stSplit351[1].split(u'결산기');
-    stStockInfor['배당률'] = stSplit3511[0];
+    stSplit35110 = stSplit3511[0].replace('%', '');
+    stStockInfor['배당률'] = stSplit35110.replace(',', '');
+    stStockInfor['배당률'] = stStockInfor['배당률'].replace(' ', '');
 
     astYearDataList = [];
     astQuaterDataList = [];
@@ -331,34 +331,42 @@ def SetFnXlsxData(nRowOffset, stStockInfor):
 
     stPurpleFormat = gstWorkBook.add_format({'font_color': 'purple'});
     stGrayFormat = gstWorkBook.add_format({'font_color': 'gray'});
+    stFnFormat = gstWorkBook.add_format({'num_format':'0.00'});
 
     gstFnSheet.write(nRowOffset, nColOffset, stStockInfor['Name'], stPurpleFormat);
     nColOffset = nColOffset + 1;
     gstFnSheet.write(nRowOffset, nColOffset, stStockInfor['Code'], stGrayFormat);
     nColOffset = nColOffset + 1;
-    gstFnSheet.write(nRowOffset, nColOffset, stStockInfor['WICS']);
+    gstFnSheet.write(nRowOffset, nColOffset, stStockInfor['WICS'], stFnFormat);
     nColOffset = nColOffset + 1;
-    gstFnSheet.write(nRowOffset, nColOffset, stStockInfor['PER']);
+    if (stStockInfor['PER'] != u''):
+        gstFnSheet.write(nRowOffset, nColOffset, float(stStockInfor['PER']), stFnFormat);
     nColOffset = nColOffset + 1;
-    gstFnSheet.write(nRowOffset, nColOffset, stStockInfor['PBR']);
+    if (stStockInfor['PBR'] != u''):
+        gstFnSheet.write(nRowOffset, nColOffset, float(stStockInfor['PBR']), stFnFormat);
     nColOffset = nColOffset + 1;
-    gstFnSheet.write(nRowOffset, nColOffset, stStockInfor['BPS']);
+    if (stStockInfor['BPS'] != u''):
+        gstFnSheet.write(nRowOffset, nColOffset, float(stStockInfor['BPS']), stFnFormat);
     nColOffset = nColOffset + 1;
-    gstFnSheet.write(nRowOffset, nColOffset, stStockInfor['EPS']);
+    if (stStockInfor['EPS'] != u''):
+        gstFnSheet.write(nRowOffset, nColOffset, float(stStockInfor['EPS']), stFnFormat);
     nColOffset = nColOffset + 1;
-    gstFnSheet.write(nRowOffset, nColOffset, stStockInfor['배당률']);
+    if (stStockInfor['배당률'] != u''):
+        gstFnSheet.write(nRowOffset, nColOffset, float(stStockInfor['배당률']), stFnFormat);
     nColOffset = nColOffset + 1;
 
     nLength = len(stStockInfor['YearDataList']);
     for nYearIndex in range(nLength):
         stYearDataList = stStockInfor['YearDataList'][nYearIndex];
-        gstFnSheet.write(nRowOffset, nColOffset, stYearDataList["item_value"]);
+        if (stYearDataList["item_value"] != u''):
+            gstFnSheet.write(nRowOffset, nColOffset, float(stYearDataList["item_value"]), stFnFormat);
         nColOffset = nColOffset + 1;
 
     nLength = len(stStockInfor['QuaterDataList']);
     for nQuaterIndex in range(nLength):
         stQuaterDataList = stStockInfor['QuaterDataList'][nQuaterIndex];
-        gstFnSheet.write(nRowOffset, nColOffset, stQuaterDataList["item_value"]);
+        if (stQuaterDataList["item_value"] != u''):
+            gstFnSheet.write(nRowOffset, nColOffset, float(stQuaterDataList["item_value"]), stFnFormat);
         nColOffset = nColOffset + 1;
 
 def SetKospiXlsxData(nColOffset, astKospiInfor):
@@ -477,6 +485,7 @@ def SISE_GetStockInfor(nStockCode, stStockInfor):   # IN (nStock: 종목코드),
     stDataInfor = {};
 
     if (nStockCode.isdigit()):                      # 일반 종목일 경우
+#        stStartDate             = datetime.datetime(1900, 1, 1);
         stStartDate             = datetime.datetime(2012, 12, 30);
         stDataInfor             = web.DataReader(nStockCode + ".KS", "yahoo", stStartDate);
     else:                                           # 코스피 / 코스닥일 경우
