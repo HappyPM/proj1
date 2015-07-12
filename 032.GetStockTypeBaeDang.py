@@ -177,6 +177,11 @@ def COMPANY_GetStockFinanceInfor(nName, nCode, astStockInfor):
     nSoup = BeautifulSoup(nPage);
     tables = nSoup.findAll('table');
 
+    astTable4 = tables[4].text.split('/');
+    astTable42 = astTable4[2].split(u'\n');
+    stStockInfor['CurPrice'] = astTable42[1].replace(',', '');
+    stStockInfor['CurPrice'] = stStockInfor['CurPrice'].replace(' ', '');
+
     astSplit = tables[1].text.split(' | ');
 
     stSplit0 = astSplit[0].split(' ');
@@ -261,6 +266,8 @@ def SetFnXlsxTitle(stStockInfor):
 #    nColOffset = nColOffset + 1;
     gstFnSheet.write(0, nColOffset, u"WICS", stNavyFormat);
     nColOffset = nColOffset + 1;
+    gstFnSheet.write(0, nColOffset, u"현재가격", stNavyFormat);
+    nColOffset = nColOffset + 1;
     gstFnSheet.write(0, nColOffset, u"PER", stNavyFormat);
     nColOffset = nColOffset + 1;
     gstFnSheet.write(0, nColOffset, u"PBR", stNavyFormat);
@@ -331,42 +338,45 @@ def SetFnXlsxData(nRowOffset, stStockInfor):
 
     stPurpleFormat = gstWorkBook.add_format({'font_color': 'purple'});
     stGrayFormat = gstWorkBook.add_format({'font_color': 'gray'});
-    stFnFormat = gstWorkBook.add_format({'num_format':'0.00'});
 
     gstFnSheet.write(nRowOffset, nColOffset, stStockInfor['Name'], stPurpleFormat);
     nColOffset = nColOffset + 1;
     gstFnSheet.write(nRowOffset, nColOffset, stStockInfor['Code'], stGrayFormat);
     nColOffset = nColOffset + 1;
-    gstFnSheet.write(nRowOffset, nColOffset, stStockInfor['WICS'], stFnFormat);
+    gstFnSheet.write(nRowOffset, nColOffset, stStockInfor['WICS']);
+    nColOffset = nColOffset + 1;
+
+    if (stStockInfor['CurPrice'] != u''):
+        gstFnSheet.write(nRowOffset, nColOffset, float(stStockInfor['CurPrice']));
     nColOffset = nColOffset + 1;
     if (stStockInfor['PER'] != u''):
-        gstFnSheet.write(nRowOffset, nColOffset, float(stStockInfor['PER']), stFnFormat);
+        gstFnSheet.write(nRowOffset, nColOffset, float(stStockInfor['PER']));
     nColOffset = nColOffset + 1;
     if (stStockInfor['PBR'] != u''):
-        gstFnSheet.write(nRowOffset, nColOffset, float(stStockInfor['PBR']), stFnFormat);
+        gstFnSheet.write(nRowOffset, nColOffset, float(stStockInfor['PBR']));
     nColOffset = nColOffset + 1;
     if (stStockInfor['BPS'] != u''):
-        gstFnSheet.write(nRowOffset, nColOffset, float(stStockInfor['BPS']), stFnFormat);
+        gstFnSheet.write(nRowOffset, nColOffset, float(stStockInfor['BPS']));
     nColOffset = nColOffset + 1;
     if (stStockInfor['EPS'] != u''):
-        gstFnSheet.write(nRowOffset, nColOffset, float(stStockInfor['EPS']), stFnFormat);
+        gstFnSheet.write(nRowOffset, nColOffset, float(stStockInfor['EPS']));
     nColOffset = nColOffset + 1;
     if (stStockInfor['배당률'] != u''):
-        gstFnSheet.write(nRowOffset, nColOffset, float(stStockInfor['배당률']), stFnFormat);
+        gstFnSheet.write(nRowOffset, nColOffset, float(stStockInfor['배당률']));
     nColOffset = nColOffset + 1;
 
     nLength = len(stStockInfor['YearDataList']);
     for nYearIndex in range(nLength):
         stYearDataList = stStockInfor['YearDataList'][nYearIndex];
         if (stYearDataList["item_value"] != u''):
-            gstFnSheet.write(nRowOffset, nColOffset, float(stYearDataList["item_value"]), stFnFormat);
+            gstFnSheet.write(nRowOffset, nColOffset, float(stYearDataList["item_value"]));
         nColOffset = nColOffset + 1;
 
     nLength = len(stStockInfor['QuaterDataList']);
     for nQuaterIndex in range(nLength):
         stQuaterDataList = stStockInfor['QuaterDataList'][nQuaterIndex];
         if (stQuaterDataList["item_value"] != u''):
-            gstFnSheet.write(nRowOffset, nColOffset, float(stQuaterDataList["item_value"]), stFnFormat);
+            gstFnSheet.write(nRowOffset, nColOffset, float(stQuaterDataList["item_value"]));
         nColOffset = nColOffset + 1;
 
 def SetKospiXlsxData(nColOffset, astKospiInfor):
@@ -517,7 +527,7 @@ def SISE_GetKospiInfor(astKospiInfor):
 
 ############# main #############
 
-gnMaxBaeDangStockCount = 100;
+gnMaxBaeDangStockCount = 2;
 
 # Kospi 정보 취합
 SISE_GetKospiInfor(gastKospiInfor);
