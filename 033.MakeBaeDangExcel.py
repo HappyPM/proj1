@@ -1,13 +1,31 @@
 #-*- coding: utf-8 -*-
 import requests;
+import pandas as pd;
+import pandas.io.data as web;
+from StringIO import StringIO;
+import datetime;
 import copy;
 import json;
 import urllib2;
 from bs4 import BeautifulSoup;
 import xlsxwriter;
+from xlsxwriter.utility import xl_rowcol_to_cell;
 
 gnOpener = urllib2.build_opener()
 gnOpener.addheaders = [('User-agent', 'Mozilla/5.0')]                 # header define
+
+def GetTodayString():
+    stNow = datetime.datetime.now();
+
+    stDate = str(stNow.year)[2:];
+    if (stNow.month < 10):
+        stDate = stDate + '0';
+    stDate = stDate + str(stNow.month);
+    if (stNow.day < 10):
+        stDate = stDate + '0';
+    stDate = stDate + str(stNow.day);
+
+    return stDate;
 
 # Stock 이름과 코드를 얻는 함수
 gastStockList = {};
@@ -133,8 +151,6 @@ def set_year_and_quater(days, data, year_data_list, quater_data_list) :
                 quater_data_list.append(quater_data);
                 
                 ii = ii + 1;
-                #print iid
-    
 
 gastYearDataList = [];
 gastQuaterDataList = [];
@@ -159,23 +175,88 @@ def COMPANY_GetFinance(ncode, astYearDataList, astQuaterDataList):
 
     set_year_and_quater(stDays, stData, astYearDataList, astQuaterDataList);
 
-gstWorkBook = xlsxwriter.Workbook('BaeDangStockList.xlsx');
-gstWorkSheet = gstWorkBook.add_worksheet();
 def GetSplitTitle(stString):
-#    stString = stString.split(u"(지배)")[0];
-#    stString = stString.split(u"(비지배)")[0];
-#    stString = stString.split(u"(%)")[0];
-#    stString = stString.split(u"(원)")[0];
-#    stString = stString.split(u"(배)")[0];
-#    stString = stString.split(u"(보통주)")[0];
-#    stString = stString.split(u"활동현금흐름")[0];
-#    stString = stString.split(u"계속사업이익")[0];
-#    stString = stString.split(u"발생부채")[0];
     stString = stString.split(u"(IFRS연결)")[0];
     stString = stString.split(u"(IFRS별도)")[0];
     return stString;
 
-def SetXlsxTitle(astYearDataList, astQuaterDataList):
+def COMPANY_GetStockFinanceInfor(nName, nCode, astStockInfor):
+    stStockInfor = {};
+    nCodeUrl = 'http://companyinfo.stock.naver.com/v1/company/c1010001.aspx?cmp_cd=';
+    nCodeUrl = nCodeUrl + nCode;
+    nResponse = gnOpener.open(nCodeUrl);
+    nPage = nResponse.read();
+    nSoup = BeautifulSoup(nPage);
+    tables = nSoup.findAll('table');
+
+    astTable4 = tables[4].text.split('/');
+    astTable42 = astTable4[2].split(u'\n');
+    stStockInfor['CurPrice'] = astTable42[1].replace(',', '');
+    stStockInfor['CurPrice'] = stStockInfor['CurPrice'].replace(' ', '');
+
+    astSplit = tables[1].text.split(' | ');
+
+    stSplit0 = astSplit[0].split(' ');
+    stStockInfor['Name'] = nName;
+    stStockInfor['Code'] = nCode;
+    stStockInfor['WebCode'] = stSplit0[1];
+
+#    stSplit2 = astSplit[2].split(' : ');
+#    stStockInfor['종목Type'] = stSplit2[0];
+
+    stSplit3 = astSplit[3].split('|');
+    stSplit30 = stSplit3[0].split('EPS');
+    stSplit300 = stSplit30[0].split(':');
+    stStockInfor['WICS'] = stSplit300[1];
+
+    stSplit301 = stSplit30[1].split(u'\xa0');
+    stStockInfor['EPS'] = stSplit301[0].replace(',', '');
+    stStockInfor['EPS'] = stStockInfor['EPS'].replace(' ', '');
+
+    stSplit31 = stSplit3[1].split(u'\xa0');
+    stSplit311 = stSplit31[1].split(' ');
+    stStockInfor['BPS'] = stSplit311[1].replace(',', '');
+    stStockInfor['BPS'] = stStockInfor['BPS'].replace(' ', '');
+
+    stSplit32 = stSplit3[2].split(u'\xa0');
+    stSplit321 = stSplit32[1].split(' ');
+    stStockInfor['PER'] = stSplit321[1].replace(',', '');
+    stStockInfor['PER'] = stStockInfor['PER'].replace(' ', '');
+
+    stSplit34 = stSplit3[4].split(u'\xa0');
+    stSplit341 = stSplit34[1].split(' ');
+    stStockInfor['PBR'] = stSplit341[1].replace(',', '');
+    stStockInfor['PBR'] = stStockInfor['PBR'].replace(' ', '');
+
+    stSplit35 = stSplit3[5].split(u'\xa0');
+    stSplit351 = stSplit35[1].split(' ');
+    stSplit3511 = stSplit351[1].split(u'결산기');
+    stSplit35110 = stSplit3511[0].replace('%', '');
+    stStockInfor['배당률'] = stSplit35110.replace(',', '');
+    stStockInfor['배당률'] = stStockInfor['배당률'].replace(' ', '');
+
+    astYearDataList = [];
+    astQuaterDataList = [];
+    COMPANY_GetFinance(stStockInfor['WebCode'], astYearDataList, astQuaterDataList);
+    stStockInfor['YearDataList'] = astYearDataList;
+    stStockInfor['QuaterDataList'] = astQuaterDataList;
+
+    stStockInfor['시세'] = {};
+    SISE_GetStockInfor(nCode, stStockInfor['시세']);
+
+    astStockInfor.append(stStockInfor);
+
+gastStockInfor = [];
+def COMPANY_GetFinanceInfor(astStockNameCode, astStockInfor):
+    nStockLen = len(astStockNameCode);
+    for nStockIndex in range(nStockLen):
+        COMPANY_GetStockFinanceInfor(astStockNameCode[nStockIndex]['Name'],
+                                        astStockNameCode[nStockIndex]['Code'],
+                                        astStockInfor);
+
+def SetFnXlsxTitle(astStockInfor):
+    stStockInfor = astStockInfor[0];
+    nStockLen = len(astStockInfor);
     nXlsxColumnOffset = 0;
     nRowOffset = 1;
     nColOffset = 0;
@@ -187,85 +268,329 @@ def SetXlsxTitle(astYearDataList, astQuaterDataList):
     stGreenTitleFormat = gstWorkBook.add_format({'bold': True, 'font_color': 'green'});
     stPurpleFormat = gstWorkBook.add_format({'bold': True, 'font_color': 'purple'});
     stGrayFormat = gstWorkBook.add_format({'bold': True, 'font_color': 'gray'});
+    stNavyFormat = gstWorkBook.add_format({'bold': True, 'font_color': 'navy'});
+    stChoiceFormat = gstWorkBook.add_format({'bold': True, 'font_color': 'black'});
 
-    gstWorkSheet.write(0, nColOffset, u"종목명", stPurpleFormat);
-    nColOffset = nColOffset + 1;
-    gstWorkSheet.write(0, nColOffset, u"코드번호", stGrayFormat);
+    gstFnSheet.write(0, nColOffset, u"종목선정", stChoiceFormat);
+    stStartCell = xl_rowcol_to_cell(2, nColOffset);
+    stEndCell = xl_rowcol_to_cell(2 + nStockLen - 1, nColOffset);
+    gstFnSheet.write(1, nColOffset, "=count(" + stStartCell + ":" + stEndCell + ")", stChoiceFormat);
     nColOffset = nColOffset + 1;
 
-    nLength = len(astYearDataList);
+    gstFnSheet.write(0, nColOffset, u"종목명", stPurpleFormat);
+    nColOffset = nColOffset + 1;
+
+
+#    gstFnSheet.write(0, nColOffset, u"종목Type", stNavyFormat);
+#    nColOffset = nColOffset + 1;
+    gstFnSheet.write(0, nColOffset, u"코드번호", stGrayFormat);
+    nColOffset = nColOffset + 1;
+    gstFnSheet.write(0, nColOffset, u"시세연결", stGrayFormat);
+    nColOffset = nColOffset + 1;
+    gstFnSheet.write(0, nColOffset, u"WICS", stNavyFormat);
+    nColOffset = nColOffset + 1;
+    gstFnSheet.write(0, nColOffset, u"현재가격", stNavyFormat);
+    nColOffset = nColOffset + 1;
+    gstFnSheet.write(0, nColOffset, u"PER", stNavyFormat);
+    nColOffset = nColOffset + 1;
+    gstFnSheet.write(0, nColOffset, u"PBR", stNavyFormat);
+    nColOffset = nColOffset + 1;
+    gstFnSheet.write(0, nColOffset, u"BPS", stNavyFormat);
+    nColOffset = nColOffset + 1;
+    gstFnSheet.write(0, nColOffset, u"EPS", stNavyFormat);
+    nColOffset = nColOffset + 1;
+    gstFnSheet.write(0, nColOffset, u"배당률", stNavyFormat);
+    nColOffset = nColOffset + 1;
+
+    nLength = len(stStockInfor['YearDataList']);
     for nYearIndex in range(nLength):
-        stYearDataList = astYearDataList[nYearIndex];
+        stYearDataList = stStockInfor['YearDataList'][nYearIndex];
         stItemName = GetSplitTitle(stYearDataList["item_name"]);
         stDay = GetSplitTitle(stYearDataList["day"]);
         stThisYear = stDay.split('/')[0];
         if (nYearIndex == 0):
             nXlsxYear = stThisYear;
         if (nXlsxYear == stThisYear):
-            gstWorkSheet.write(0, nColOffset, u"연간 " + stItemName, stRedTitleFormat);
+            gstFnSheet.write(0, nColOffset, u"연간 " + stItemName, stRedTitleFormat);
 
-        gstWorkSheet.write(nRowOffset, nColOffset, stThisYear, stTitleFormat);
+        gstFnSheet.write(nRowOffset, nColOffset, stThisYear, stTitleFormat);
         nColOffset = nColOffset + 1;
 
-    nLength = len(astQuaterDataList);
+    nLength = len(stStockInfor['QuaterDataList']);
     for nQuarterIndex in range(nLength):
-        stQuaterDataList = astQuaterDataList[nQuarterIndex];
+        stQuaterDataList = stStockInfor['QuaterDataList'][nQuarterIndex];
         stItemName = GetSplitTitle(stQuaterDataList["item_name"]);
         stDay = GetSplitTitle(stQuaterDataList["day"]);
         stThisQuarter = stDay.split('/')[1];
         if (nQuarterIndex == 0):
             nXlsxQuarter = stDay.split('/')[1];
         if (nXlsxQuarter == stThisQuarter):
-            gstWorkSheet.write(0, nColOffset, u"분기 " + stItemName, stGreenTitleFormat);
+            gstFnSheet.write(0, nColOffset, u"분기 " + stItemName, stGreenTitleFormat);
 
-        gstWorkSheet.write(nRowOffset, nColOffset, stThisQuarter, stTitleFormat);
+        gstFnSheet.write(nRowOffset, nColOffset, stThisQuarter, stTitleFormat);
         nColOffset = nColOffset + 1;
 
-def SetXlsxData(nRowOffset, stStockNameCode, astYearDataList, astQuaterDataList):
+
+def SetSiseXlsxTitle(astStockInfor):
+    nXlsxColumnOffset = 0;
+    nRowOffset = 0;
     nColOffset = 0;
+    nXlsxYear = 0;
+    nXlsxQuarter= 0;
+
+    stTitleFormat = gstWorkBook.add_format({'bold': True, 'font_color': 'blue'});
+    stRedTitleFormat = gstWorkBook.add_format({'bold': True, 'font_color': 'red'});
+    stGreenTitleFormat = gstWorkBook.add_format({'bold': True, 'font_color': 'green'});
+    stPurpleBoldFormat = gstWorkBook.add_format({'bold': True, 'font_color': 'purple'});
+    stPurpleFormat = gstWorkBook.add_format({'font_color': 'purple'});
+    stGrayFormat = gstWorkBook.add_format({'bold': True, 'font_color': 'gray'});
+    stNavyFormat = gstWorkBook.add_format({'bold': True, 'font_color': 'navy'});
+
+    gstSiseSheet.write(0, nColOffset, u'날짜', stPurpleBoldFormat);
+    nRowOffset = nRowOffset + 1;
+    nRowOffset = nRowOffset + 1;
+
+    nLength = len(astStockInfor);
+    for nDayIndex in range(nLength):
+        stStockInfor = astStockInfor[nDayIndex];
+        gstSiseSheet.write(nRowOffset, nColOffset, stStockInfor['Date'], stPurpleFormat);
+        nRowOffset = nRowOffset + 1;
+
+def SetFnXlsxData(nRowOffset, astStockInfor, nStockIndex):
+    stStockInfor = astStockInfor[nStockIndex];
+    nColOffset = 1;
+    nCodeUrl = 'http://finance.naver.com/item/main.nhn?code=';
+    nSiseUrl = u'internal:' + gstSiseSheetName + u'!';
 
     stPurpleFormat = gstWorkBook.add_format({'font_color': 'purple'});
-    stGrayFormat = gstWorkBook.add_format({'font_color': 'gray'});
+    stGrayFormat = gstWorkBook.add_format({'font_color': 'gray', 'underline':  1});
 
-    gstWorkSheet.write(nRowOffset, nColOffset, stStockNameCode['Name'], stPurpleFormat);
-    nColOffset = nColOffset + 1;
-    gstWorkSheet.write(nRowOffset, nColOffset, stStockNameCode['Code'], stGrayFormat);
+    # 종목명
+    gstFnSheet.write(nRowOffset, nColOffset, stStockInfor['Name'], stPurpleFormat);
     nColOffset = nColOffset + 1;
 
-    for stYearDataList in astYearDataList:
-        gstWorkSheet.write(nRowOffset, nColOffset, stYearDataList["item_value"]);
+    # 코드번호
+    stCell = xl_rowcol_to_cell(nRowOffset, nColOffset);
+    gstFnSheet.write_url(stCell, nCodeUrl + stStockInfor['Code'], stGrayFormat, stStockInfor['Code']);
+    nColOffset = nColOffset + 1;
+
+    # 시세연결
+    nTargetRowOffset = 3;
+    nTargetColOffset = 4 + (2 * nStockIndex);
+    stCell = xl_rowcol_to_cell(nTargetRowOffset, nTargetColOffset);
+    gstFnSheet.write(nRowOffset, nColOffset, nSiseUrl + stCell, stGrayFormat, stCell);
+    nColOffset = nColOffset + 1;
+
+    # WICS
+    gstFnSheet.write(nRowOffset, nColOffset, stStockInfor['WICS']);
+    nColOffset = nColOffset + 1;
+
+    if (stStockInfor['CurPrice'] != u''):
+        gstFnSheet.write(nRowOffset, nColOffset, float(stStockInfor['CurPrice']));
+    nColOffset = nColOffset + 1;
+    if (stStockInfor['PER'] != u''):
+        gstFnSheet.write(nRowOffset, nColOffset, float(stStockInfor['PER']));
+    nColOffset = nColOffset + 1;
+    if (stStockInfor['PBR'] != u''):
+        gstFnSheet.write(nRowOffset, nColOffset, float(stStockInfor['PBR']));
+    nColOffset = nColOffset + 1;
+    if (stStockInfor['BPS'] != u''):
+        gstFnSheet.write(nRowOffset, nColOffset, float(stStockInfor['BPS']));
+    nColOffset = nColOffset + 1;
+    if (stStockInfor['EPS'] != u''):
+        gstFnSheet.write(nRowOffset, nColOffset, float(stStockInfor['EPS']));
+    nColOffset = nColOffset + 1;
+    if (stStockInfor['배당률'] != u''):
+        gstFnSheet.write(nRowOffset, nColOffset, float(stStockInfor['배당률']));
+    nColOffset = nColOffset + 1;
+
+    nLength = len(stStockInfor['YearDataList']);
+    for nYearIndex in range(nLength):
+        stYearDataList = stStockInfor['YearDataList'][nYearIndex];
+        if (stYearDataList["item_value"] != u''):
+            gstFnSheet.write(nRowOffset, nColOffset, float(stYearDataList["item_value"]));
         nColOffset = nColOffset + 1;
 
-    for stQuaterDataList in astQuaterDataList:
-        gstWorkSheet.write(nRowOffset, nColOffset, stQuaterDataList["item_value"]);
+    nLength = len(stStockInfor['QuaterDataList']);
+    for nQuaterIndex in range(nLength):
+        stQuaterDataList = stStockInfor['QuaterDataList'][nQuaterIndex];
+        if (stQuaterDataList["item_value"] != u''):
+            gstFnSheet.write(nRowOffset, nColOffset, float(stQuaterDataList["item_value"]));
         nColOffset = nColOffset + 1;
 
-def GetFinanceAndWriteExcel(astStockNameCode):
-    gastYearDataList = [];
-    gastQuaterDataList = [];
+def SetKospiXlsxData(nColOffset, astKospiInfor):
+    nRowOffset = 0;
+    bFirstPrice = 0;
+    nCurPrice = 0;
+    nCurRate = 0;
 
-#    COMPANY_GetFinance('005935', gastYearDataList, gastQuaterDataList);
-#    SetXlsxTitle(gastYearDataList, gastQuaterDataList);
+    stTitleFormat = gstWorkBook.add_format({'bold': True, 'font_color': 'blue'});
+    stRedTitleFormat = gstWorkBook.add_format({'bold': True, 'font_color': 'red'});
+    stGreenTitleFormat = gstWorkBook.add_format({'bold': True, 'font_color': 'green'});
+    stPurpleBoldFormat = gstWorkBook.add_format({'bold': True, 'font_color': 'purple'});
+    stPurpleFormat = gstWorkBook.add_format({'font_color': 'purple'});
+    stGrayFormat = gstWorkBook.add_format({'bold': True, 'font_color': 'gray'});
+    stNavyFormat = gstWorkBook.add_format({'bold': True, 'font_color': 'navy'});
+    stSiseFormat = gstWorkBook.add_format({'num_format':'0.00'});
+    stRateFormat = gstWorkBook.add_format({'num_format':'0.000'});
 
-    nStockLen = len(astStockNameCode);
+    gstSiseSheet.write(nRowOffset, nColOffset, u'KOSPI', stTitleFormat);
+    nRowOffset = nRowOffset + 1;
+
+    gstSiseSheet.write(nRowOffset, nColOffset, u'시세', stGreenTitleFormat);
+    gstSiseSheet.write(nRowOffset, nColOffset + 1, u'증감율', stRedTitleFormat);
+    nRowOffset = nRowOffset + 1;
+
+    # 시세 출력
+    nKospiLength = len(astKospiInfor);
+    for nDayIndex in range(nKospiLength):
+        stStockInfor = astKospiInfor[nDayIndex];
+        nCurPrice = stStockInfor['Price'];
+
+        gstSiseSheet.write(nRowOffset, nColOffset, nCurPrice, stSiseFormat);
+
+        if (bFirstPrice == 0):
+            bFirstPrice = 1;
+        else:
+            nCurRate = ((nCurPrice * 100) / nPrevPrice) - 100;
+            gstSiseSheet.write(nRowOffset, nColOffset + 1, nCurRate, stRateFormat);
+
+        nPrevPrice = nCurPrice;
+        nRowOffset = nRowOffset + 1;
+
+def SetSiseXlsxData(nColOffset, astKospiInfor, stStockInfor):
+    nRowOffset = 0;
+    nKospiIndex = 0;
+    astSiseStockInfor = stStockInfor['시세'];
+    bFirstPrice = 0;
+    nCurPrice = 0;
+    nCurRate = 0;
+
+    stTitleFormat = gstWorkBook.add_format({'bold': True, 'font_color': 'blue'});
+    stRedTitleFormat = gstWorkBook.add_format({'bold': True, 'font_color': 'red'});
+    stGreenTitleFormat = gstWorkBook.add_format({'bold': True, 'font_color': 'green'});
+    stPurpleFormat = gstWorkBook.add_format({'bold': True, 'font_color': 'purple'});
+    stGrayFormat = gstWorkBook.add_format({'bold': True, 'font_color': 'gray'});
+    stNavyFormat = gstWorkBook.add_format({'bold': True, 'font_color': 'navy'});
+    stRateFormat = gstWorkBook.add_format({'num_format':'0.000'});
+
+    gstSiseSheet.write(nRowOffset, nColOffset, stStockInfor['Name'], stNavyFormat);
+    nRowOffset = nRowOffset + 1;
+
+    gstSiseSheet.write(nRowOffset, nColOffset, u'시세', stGreenTitleFormat);
+    gstSiseSheet.write(nRowOffset, nColOffset + 1, u'증감율', stRedTitleFormat);
+    nRowOffset = nRowOffset + 1;
+
+    # 시세 출력
+    nKospiLength = len(astKospiInfor);
+    for nKospiIndex in range(nKospiLength):
+        if (astSiseStockInfor.has_key(astKospiInfor[nKospiIndex]['Date'])):
+            nCurPrice = astSiseStockInfor[astKospiInfor[nKospiIndex]['Date']];
+
+            gstSiseSheet.write(nRowOffset, nColOffset, nCurPrice);
+
+            if (bFirstPrice == 0):
+                bFirstPrice = 1;
+            else:
+                nCurRate = ((nCurPrice * 100) / nPrevPrice) - 100;
+                gstSiseSheet.write(nRowOffset, nColOffset + 1, nCurRate, stRateFormat);
+
+            nPrevPrice = nCurPrice;
+        nRowOffset = nRowOffset + 1;
+
+def COMPANY_WriteExcelFile(astKospiInfor, astStockInfor):
+    nColOffset = 0;
+    nRowOffset = 0;
+
+    # 시세 Title 출력
+    SetSiseXlsxTitle(astKospiInfor);
+    nColOffset = nColOffset + 1;
+    SetKospiXlsxData(nColOffset, astKospiInfor);
+    nColOffset = nColOffset + 2;
+
+    # 시세 데이터 출력
+    nStockLen = len(astStockInfor);
     for nStockIndex in range(nStockLen):
-        gastYearDataList = [];
-        gastQuaterDataList = [];
-        COMPANY_GetFinance(astStockNameCode[nStockIndex]['Code'], gastYearDataList, gastQuaterDataList);
-        if (nStockIndex == 0):
-            SetXlsxTitle(gastYearDataList, gastQuaterDataList);
-        SetXlsxData(nStockIndex + 2, astStockNameCode[nStockIndex], gastYearDataList, gastQuaterDataList);
-        nStockIndex = nStockIndex;
+        SetSiseXlsxData(nColOffset, astKospiInfor, astStockInfor[nStockIndex]);
+        nColOffset = nColOffset + 2;
+
+    # 재무 Title 출력
+    SetFnXlsxTitle(astStockInfor);
+    nRowOffset = nRowOffset + 2;
+
+    # 재무 데이터 출력
+    nStockLen = len(astStockInfor);
+    for nStockIndex in range(nStockLen):
+        SetFnXlsxData(nRowOffset, astStockInfor, nStockIndex);
+        nRowOffset = nRowOffset + 1;
+
+# Date & 가격을 얻는 함수 (코스피 / 코스닥 / 일반종목)
+# 코스피 or 코스닥 or 일반 종목 선택
+#gnStockCode             = 'KOSPI';      # '1997-07-01' ~
+#gnStockCode             = 'KOSDAQ';     # '2013-03-04' ~
+#gnStockCode             = '014530';     # '2000-0101' ~
+gastStockInfor          = [];
+def SISE_GetStockInfor(nStockCode, stStockInfor):   # IN (nStock: 종목코드), OUT (stStockInfor: 종목 정보)
+    stDataInfor = {};
+
+    if (nStockCode.isdigit()):                      # 일반 종목일 경우
+#        stStartDate             = datetime.datetime(1900, 1, 1);
+        stStartDate             = datetime.datetime(2012, 12, 30);
+        stDataInfor             = web.DataReader(nStockCode + ".KS", "yahoo", stStartDate);
+    else:                                           # 코스피 / 코스닥일 경우
+        anReqCode               = {};
+        anReqCode['KOSPI']      = '^KS11';
+        anReqCode['KOSDAQ']     = '^KQ11';
+
+        # nUrl                    = 'http://real-chart.finance.yahoo.com/table.csv?s=' + anReqCode[nStockCode] + '&a=0&b=1&c=1900';
+
+        # Month = a + 1 / Day = b / Year = c
+        nUrl                    = 'http://real-chart.finance.yahoo.com/table.csv?s=' + anReqCode[nStockCode] + '&a=11&b=30&c=2012';
+        stRequest               = requests.get(nUrl);
+        stDataInfor             = pd.read_csv(StringIO(stRequest.content), index_col='Date', parse_dates={'Date'});
+
+    if (nStockCode.isdigit()):                      # 일반 종목일 경우
+        for nIndex in range(stDataInfor.shape[0]):
+            stStockInfor[stDataInfor.index[nIndex]._date_repr[2:]]   = stDataInfor.values[nIndex][3];
+    else:                                           # 코스피 / 코스닥일 경우
+        for nIndex in range(stDataInfor.shape[0]):
+            stStock             = {};
+            stStock['Date']     = stDataInfor.index[nIndex]._date_repr[2:]; # 날짜
+            stStock['Price']    = stDataInfor.values[nIndex][3];            # 종가: 'Close'
+            stStockInfor.append(stStock);
+
+gastKospiInfor      = [];
+def SISE_GetKospiInfor(astKospiInfor):
+    SISE_GetStockInfor('KOSPI', astKospiInfor);
+    astKospiInfor.sort();
 
 ############# main #############
 
 gnMaxBaeDangStockCount = 500;
-#GetFinanceAndWriteExcel(gastStockNameCode);
 
+gstDate = GetTodayString();
+
+# Kospi 정보 취합
+SISE_GetKospiInfor(gastKospiInfor);
+
+# 종목 정보 취합
 COMPANY_GetStockName(gastStockName, gnMaxBaeDangStockCount);
 COMPANY_GetStockCode(gastStockList);
 COMPANY_GetNameToCode(gastStockList, gastStockName, gastStockNameCode);
-GetFinanceAndWriteExcel(gastStockNameCode);
+COMPANY_GetFinanceInfor(gastStockNameCode, gastStockInfor);
+
+# 종목 정보 출력
+gstWorkBook = xlsxwriter.Workbook('BaeDangStockList.xlsx');
+gstFnSheetName = u'FN' + gstDate;
+gstFnSheet = gstWorkBook.add_worksheet(gstFnSheetName);
+gstSiseSheetName = u'시세' + gstDate;
+gstSiseSheet = gstWorkBook.add_worksheet(gstSiseSheetName);
+
+COMPANY_WriteExcelFile(gastKospiInfor, gastStockInfor);
+
+gstFnSheet.autofilter('E2:JG2');
+gstFnSheet.freeze_panes('C3');
+gstSiseSheet.freeze_panes('D3');
 gstWorkBook.close();
 
 gnMaxBaeDangStockCount = gnMaxBaeDangStockCount;
