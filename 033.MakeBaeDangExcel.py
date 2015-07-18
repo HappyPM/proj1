@@ -11,6 +11,11 @@ from bs4 import BeautifulSoup;
 import xlsxwriter;
 from xlsxwriter.utility import xl_rowcol_to_cell;
 
+
+gnMaxBaeDangStockCount = 500;
+gbPrintProgress = 1;
+
+
 gnOpener = urllib2.build_opener()
 gnOpener.addheaders = [('User-agent', 'Mozilla/5.0')]                 # header define
 
@@ -44,6 +49,8 @@ def COMPANY_GetStockCode(astStockList): # OUT (gastStockList: 종목 이름 / 코드)
         nStockCode = cols[0].text[0:].split("A")[1];
         nStockName = cols[1].text.replace(";", "");
         gastStockList[nStockName] = nStockCode;
+    PrintProgress(u"[완료] 종목 코드 취합");
+
 
 gastStockNameCode = [];
 def COMPANY_GetNameToCode(astStockList, astStockName, astStockNameCode):   # IN (nStock: 종목코드), OUT (stStockInfor: 종목 정보)
@@ -62,6 +69,7 @@ def COMPANY_GetNameToCode(astStockList, astStockName, astStockNameCode):   # IN 
         astStockNameCode.append(0);
         astStockNameCode[nStockOffset] = copy.deepcopy(stStockNameCode);
         nStockOffset = nStockOffset + 1;
+    PrintProgress(u"[완료] 종목 코드 변환");
 
 gastStockName = [];
 def COMPANY_GetStockName(astStockName, nMaxStockCount):
@@ -92,11 +100,15 @@ def COMPANY_GetStockName(astStockName, nMaxStockCount):
             astStockType = astTr[nTrIndex].text.split("\n");
             nStockName = astStockType[1];
             astStockName.append(nStockName);
+            PrintProgress(u"[진행] 종목 리스트 취합: " + nStockName);
 
             if ((len(astStockName) % 50) == 0):
                 break;
             if (len(astStockName) >= nMaxStockCount):
                 break;
+
+    PrintProgress(u"[완료] 종목 리스트 취합");
+
 
 def get_days_to_json(soup):
     script = soup.findAll('script')[4].string
@@ -253,6 +265,7 @@ def COMPANY_GetFinanceInfor(astStockNameCode, astStockInfor):
         COMPANY_GetStockFinanceInfor(astStockNameCode[nStockIndex]['Name'],
                                         astStockNameCode[nStockIndex]['Code'],
                                         astStockInfor);
+        PrintProgress(u"[진행] 종목 정보 취합: " +  str(nStockIndex + 1) + " / " + str(nStockLen) + " - " + astStockNameCode[nStockIndex]['Name']);
 
 def SetFnXlsxTitle(astStockInfor):
     stStockInfor = astStockInfor[0];
@@ -279,7 +292,6 @@ def SetFnXlsxTitle(astStockInfor):
 
     gstFnSheet.write(0, nColOffset, u"종목명", stPurpleFormat);
     nColOffset = nColOffset + 1;
-
 
 #    gstFnSheet.write(0, nColOffset, u"종목Type", stNavyFormat);
 #    nColOffset = nColOffset + 1;
@@ -330,7 +342,6 @@ def SetFnXlsxTitle(astStockInfor):
         gstFnSheet.write(nRowOffset, nColOffset, stThisQuarter, stTitleFormat);
         nColOffset = nColOffset + 1;
 
-
 def SetSiseXlsxTitle(astStockInfor):
     nXlsxColumnOffset = 0;
     nRowOffset = 0;
@@ -375,10 +386,9 @@ def SetFnXlsxData(nRowOffset, astStockInfor, nStockIndex):
     nColOffset = nColOffset + 1;
 
     # 시세연결
-    nTargetRowOffset = 3;
-    nTargetColOffset = 4 + (2 * nStockIndex);
-    stCell = xl_rowcol_to_cell(nTargetRowOffset, nTargetColOffset);
-    gstFnSheet.write(nRowOffset, nColOffset, nSiseUrl + stCell, stGrayFormat, stCell);
+    stLinkCell = xl_rowcol_to_cell(0, 3 + (2 * nStockIndex));
+    stTargetColOffset = str(4 + (2 * nStockIndex));
+    gstFnSheet.write(nRowOffset, nColOffset, nSiseUrl + stLinkCell, stGrayFormat, stTargetColOffset);
     nColOffset = nColOffset + 1;
 
     # WICS
@@ -437,8 +447,8 @@ def SetKospiXlsxData(nColOffset, astKospiInfor):
     gstSiseSheet.write(nRowOffset, nColOffset, u'KOSPI', stTitleFormat);
     nRowOffset = nRowOffset + 1;
 
-    gstSiseSheet.write(nRowOffset, nColOffset, u'시세', stGreenTitleFormat);
-    gstSiseSheet.write(nRowOffset, nColOffset + 1, u'증감율', stRedTitleFormat);
+    gstSiseSheet.write(nRowOffset, nColOffset, u'증감율', stRedTitleFormat);
+    gstSiseSheet.write(nRowOffset, nColOffset + 1, u'시세', stGreenTitleFormat);
     nRowOffset = nRowOffset + 1;
 
     # 시세 출력
@@ -447,13 +457,13 @@ def SetKospiXlsxData(nColOffset, astKospiInfor):
         stStockInfor = astKospiInfor[nDayIndex];
         nCurPrice = stStockInfor['Price'];
 
-        gstSiseSheet.write(nRowOffset, nColOffset, nCurPrice, stSiseFormat);
-
         if (bFirstPrice == 0):
             bFirstPrice = 1;
         else:
             nCurRate = ((nCurPrice * 100) / nPrevPrice) - 100;
-            gstSiseSheet.write(nRowOffset, nColOffset + 1, nCurRate, stRateFormat);
+            gstSiseSheet.write(nRowOffset, nColOffset, nCurRate, stRateFormat);
+
+        gstSiseSheet.write(nRowOffset, nColOffset + 1, nCurPrice, stSiseFormat);
 
         nPrevPrice = nCurPrice;
         nRowOffset = nRowOffset + 1;
@@ -465,6 +475,7 @@ def SetSiseXlsxData(nColOffset, astKospiInfor, stStockInfor):
     bFirstPrice = 0;
     nCurPrice = 0;
     nCurRate = 0;
+    nImpossibleRate = 30;
 
     stTitleFormat = gstWorkBook.add_format({'bold': True, 'font_color': 'blue'});
     stRedTitleFormat = gstWorkBook.add_format({'bold': True, 'font_color': 'red'});
@@ -477,8 +488,8 @@ def SetSiseXlsxData(nColOffset, astKospiInfor, stStockInfor):
     gstSiseSheet.write(nRowOffset, nColOffset, stStockInfor['Name'], stNavyFormat);
     nRowOffset = nRowOffset + 1;
 
-    gstSiseSheet.write(nRowOffset, nColOffset, u'시세', stGreenTitleFormat);
-    gstSiseSheet.write(nRowOffset, nColOffset + 1, u'증감율', stRedTitleFormat);
+    gstSiseSheet.write(nRowOffset, nColOffset, u'증감율', stRedTitleFormat);
+    gstSiseSheet.write(nRowOffset, nColOffset + 1, u'시세', stGreenTitleFormat);
     nRowOffset = nRowOffset + 1;
 
     # 시세 출력
@@ -487,18 +498,139 @@ def SetSiseXlsxData(nColOffset, astKospiInfor, stStockInfor):
         if (astSiseStockInfor.has_key(astKospiInfor[nKospiIndex]['Date'])):
             nCurPrice = astSiseStockInfor[astKospiInfor[nKospiIndex]['Date']];
 
-            gstSiseSheet.write(nRowOffset, nColOffset, nCurPrice);
-
             if (bFirstPrice == 0):
                 bFirstPrice = 1;
             else:
                 nCurRate = ((nCurPrice * 100) / nPrevPrice) - 100;
-                gstSiseSheet.write(nRowOffset, nColOffset + 1, nCurRate, stRateFormat);
+                if (nCurRate > nImpossibleRate) or (nCurRate < (nImpossibleRate * -1)):
+                    nCurRate = 0;
+
+                gstSiseSheet.write(nRowOffset, nColOffset, nCurRate, stRateFormat);
+
+            gstSiseSheet.write(nRowOffset, nColOffset + 1, nCurPrice);
 
             nPrevPrice = nCurPrice;
         nRowOffset = nRowOffset + 1;
 
+def SetGraphXlsxData(nMaxDateCount, nMaxsStockCount):
+    nMaxRowOffset = nMaxDateCount + 2;
+    nStartFnRowOffset = 3;
+    nEndFnRowOffset = nStartFnRowOffset + nMaxsStockCount - 1;
+    stStartFnRowOffset = str(nStartFnRowOffset);
+    stEndFnRowOffset = str(nEndFnRowOffset);
+
+    stSiseCell = gstSiseSheetName + u'!';
+    nRowOffset = 0;
+    nColOffset = 0;
+
+    nDateColOffset = 0;
+    nKospiColOffset = 1;
+    nAvgStockColOffset = 2;
+    nKospiVsColOffset = 3;
+    nStockColOffset = 4;
+
+    stTitleBoldFormat = gstWorkBook.add_format({'bold': True, 'font_color': 'blue'});
+    stRedTitleBoldFormat = gstWorkBook.add_format({'bold': True, 'font_color': 'red'});
+    stTitleFormat = gstWorkBook.add_format({'font_color': 'blue'});
+    stRedTitleFormat = gstWorkBook.add_format({'font_color': 'red'});
+    stGreenTitleFormat = gstWorkBook.add_format({'font_color': 'green'});
+    stPurpleBoldFormat = gstWorkBook.add_format({'bold': True, 'font_color': 'purple'});
+    stPurpleFormat = gstWorkBook.add_format({'font_color': 'purple'});
+    stGrayFormat = gstWorkBook.add_format({'bold': True, 'font_color': 'gray'});
+    stNavyFormat = gstWorkBook.add_format({'bold': True, 'font_color': 'navy'});
+    stRateFormat = gstWorkBook.add_format({'num_format':'0.000'});
+
+    # 날짜 / KOSPI
+    for nRowOffset in range(nMaxRowOffset):
+        stTransCell = xl_rowcol_to_cell(nRowOffset, nDateColOffset);
+        stString = stSiseCell + stTransCell;
+        stDateString = u'=' + "IF(" + stString + " > 0," + stString + ", \"\")";
+        if (nRowOffset < 2):
+            gstGraphSheet.write(nRowOffset, nDateColOffset, stDateString, stPurpleBoldFormat);
+        else:
+            gstGraphSheet.write(nRowOffset, nDateColOffset, stDateString, stPurpleFormat);
+
+
+        stTransCell = xl_rowcol_to_cell(nRowOffset, nKospiColOffset);
+        stKospiString = u'=' + stSiseCell + stTransCell;
+        if (nRowOffset < 1):
+            gstGraphSheet.write(nRowOffset, nKospiColOffset, stKospiString, stTitleFormat);
+        elif (nRowOffset < 2):
+            gstGraphSheet.write(nRowOffset, nKospiColOffset, stKospiString, stGreenTitleFormat);
+        else:
+            gstGraphSheet.write(nRowOffset, nKospiColOffset, stKospiString, stRateFormat);
+
+
+    # 평균 증감
+    gstGraphSheet.write(0, nAvgStockColOffset, u"종목 평균", stTitleFormat);
+    gstGraphSheet.write(1, nAvgStockColOffset, u"증감율", stGreenTitleFormat);
+    for nDateIndex in range(nMaxDateCount):
+        if (nDateIndex == 0):
+            continue;
+
+        nDateRowOffset = nDateIndex + 2;
+        stStartTransCell = xl_rowcol_to_cell(nDateRowOffset, nStockColOffset);
+        stEndTransCell = xl_rowcol_to_cell(nDateRowOffset, nStockColOffset + nMaxsStockCount - 1);
+        stString = "=IFERROR(AVERAGE(" + stStartTransCell + ":" + stEndTransCell + "), \"\")";
+        gstGraphSheet.write(nDateRowOffset, nAvgStockColOffset, stString, stRateFormat);
+
+
+    # 누적승리
+    gstGraphSheet.write(0, nKospiVsColOffset, u"종목 평균", stTitleBoldFormat);
+    gstGraphSheet.write(1, nKospiVsColOffset, u"누적 승리", stRedTitleBoldFormat);
+    for nDateIndex in range(nMaxDateCount):
+        if (nDateIndex == 0):
+            continue;
+
+        nDateRowOffset = nDateIndex + 2;
+
+        stAccumulatedCell = xl_rowcol_to_cell(nDateRowOffset - 1, nKospiVsColOffset);
+        stAvgStockRate = xl_rowcol_to_cell(nDateRowOffset, nKospiVsColOffset - 1);
+        stKospiRate = xl_rowcol_to_cell(nDateRowOffset, nKospiVsColOffset - 2);
+
+        stString = "=IFERROR(" + stAccumulatedCell + " + (" + stAvgStockRate + " - " + stKospiRate + "), \"\")";
+
+        gstGraphSheet.write(nDateRowOffset, nKospiVsColOffset, stString, stRateFormat);
+
+
+    # 선정 종목
+    for nStockIndex in range(nMaxsStockCount):
+        for nRowOffset in range(nMaxRowOffset):
+            stStockColOffset = str(nStockIndex + 1);
+            stSiseRowOffset = str(nRowOffset + 1);
+
+            stString = "=IFERROR(INDIRECT(ADDRESS(" + stSiseRowOffset + ", INDIRECT(ADDRESS(2 + MATCH(" + stStockColOffset + ", ";
+            stString += gstFnSheetName + "!$A$" + stStartFnRowOffset + ":$A$" + stEndFnRowOffset + ", 0), 4, 4, 5, \"" + gstFnSheetName + "\")), ";
+            stString += "4, 5, \"" + gstSiseSheetName + "\")), \"\")";
+
+            if (nRowOffset >= 2):
+                gstGraphSheet.write(nRowOffset, nStockColOffset + nStockIndex, stString, stRateFormat);
+            else:
+                gstGraphSheet.write(nRowOffset, nStockColOffset + nStockIndex, stString);
+
+    # 선정 종목
+    stChart = gstWorkBook.add_chart({'type':'line'});
+    stGraphCell = xl_rowcol_to_cell(nStartFnRowOffset - 1, nStockColOffset);
+
+    stStartTransCell = xl_rowcol_to_cell(2, nKospiVsColOffset);
+    stEndTransCell = xl_rowcol_to_cell(nMaxRowOffset - 1, nKospiVsColOffset);
+    stData = '=' + gstGraphSheetName + '!' + stStartTransCell + ":" + stEndTransCell;
+
+    stStartDateCell = xl_rowcol_to_cell(2, nDateColOffset);
+    stEndDateCell = xl_rowcol_to_cell(nMaxRowOffset - 1, nDateColOffset);
+    stDate = '=' + gstGraphSheetName + '!' + stStartDateCell + ":" + stEndDateCell;
+
+    stTitle = xl_rowcol_to_cell(1, nKospiVsColOffset);
+    stChart.set_title({'name':u"KOSPI 대비 누적 승리율"});
+    stChart.set_x_axis({'name':u'날짜'});
+    stChart.set_y_axis({'name':u'승리율(%)', 'min':0, 'max':100});
+
+    stChart.add_series({'name':u"누적 승리",'categories':stDate, 'values':stData});
+    stChart.set_size({'width':720, 'height':504});
+    gstGraphSheet.insert_chart(stGraphCell, stChart);
+
 def COMPANY_WriteExcelFile(astKospiInfor, astStockInfor):
+    PrintProgress(u"[시작] 엑셀 취합");
     nColOffset = 0;
     nRowOffset = 0;
 
@@ -523,6 +655,10 @@ def COMPANY_WriteExcelFile(astKospiInfor, astStockInfor):
     for nStockIndex in range(nStockLen):
         SetFnXlsxData(nRowOffset, astStockInfor, nStockIndex);
         nRowOffset = nRowOffset + 1;
+
+    # 그래프 출력
+    SetGraphXlsxData(len(astKospiInfor), len(astStockInfor));
+    PrintProgress(u"[완료] 엑셀 취합");
 
 # Date & 가격을 얻는 함수 (코스피 / 코스닥 / 일반종목)
 # 코스피 or 코스닥 or 일반 종목 선택
@@ -563,10 +699,13 @@ gastKospiInfor      = [];
 def SISE_GetKospiInfor(astKospiInfor):
     SISE_GetStockInfor('KOSPI', astKospiInfor);
     astKospiInfor.sort();
+    PrintProgress(u"[완료] KOSPI 정보 취합");
+
+def PrintProgress(stString):
+    if (gbPrintProgress > 0):
+        print stString;
 
 ############# main #############
-
-gnMaxBaeDangStockCount = 500;
 
 gstDate = GetTodayString();
 
@@ -585,12 +724,16 @@ gstFnSheetName = u'FN' + gstDate;
 gstFnSheet = gstWorkBook.add_worksheet(gstFnSheetName);
 gstSiseSheetName = u'시세' + gstDate;
 gstSiseSheet = gstWorkBook.add_worksheet(gstSiseSheetName);
+gstGraphSheetName = u'그래프' + gstDate;
+gstGraphSheet = gstWorkBook.add_worksheet(gstGraphSheetName);
 
 COMPANY_WriteExcelFile(gastKospiInfor, gastStockInfor);
 
 gstFnSheet.autofilter('E2:JG2');
 gstFnSheet.freeze_panes('C3');
 gstSiseSheet.freeze_panes('D3');
+gstGraphSheet.freeze_panes('E3');
+PrintProgress(u"[시작] 엑셀 출력");
 gstWorkBook.close();
-
-gnMaxBaeDangStockCount = gnMaxBaeDangStockCount;
+PrintProgress(u"[완료] 엑셀 출력");
+PrintProgress(u"Complete all process");
