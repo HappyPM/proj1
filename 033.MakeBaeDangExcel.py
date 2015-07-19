@@ -255,8 +255,9 @@ def COMPANY_GetStockFinanceInfor(nName, nCode, astStockInfor):
 
 gastStockInfor = [];
 def COMPANY_GetFinanceInfor(astStockNameCode, astStockInfor):
-    PrintProgress(u"[시작] 종목 정보 취합: " + str(0) + " / " + str(nStockLen));
     nStockLen = len(astStockNameCode);
+    PrintProgress(u"[시작] 종목 정보 취합: " + str(0) + " / " + str(nStockLen));
+
     for nStockIndex in range(nStockLen):
         COMPANY_GetStockFinanceInfor(astStockNameCode[nStockIndex]['Name'],
                                         astStockNameCode[nStockIndex]['Code'],
@@ -636,25 +637,30 @@ def COMPANY_WriteExcelFile(astKospiInfor, astStockInfor):
     nColOffset = nColOffset + 1;
     SetKospiXlsxData(nColOffset, astKospiInfor);
     nColOffset = nColOffset + 2;
+    PrintProgress(u"[진행] 시세 Title 출력");
 
     # 시세 데이터 출력
     nStockLen = len(astStockInfor);
     for nStockIndex in range(nStockLen):
         SetSiseXlsxData(nColOffset, astKospiInfor, astStockInfor[nStockIndex]);
         nColOffset = nColOffset + 2;
+        PrintProgress(u"[진행] 시세 데이터 출력: " + str(nStockIndex + 1) + " / " + str(nStockLen) + " - " + astStockInfor[nStockIndex]['Name']);
 
     # 재무 Title 출력
     SetFnXlsxTitle(astStockInfor);
     nRowOffset = nRowOffset + 2;
+    PrintProgress(u"[진행] 재무 Title 출력");
 
     # 재무 데이터 출력
     nStockLen = len(astStockInfor);
     for nStockIndex in range(nStockLen):
         SetFnXlsxData(nRowOffset, astStockInfor, nStockIndex);
         nRowOffset = nRowOffset + 1;
+        PrintProgress(u"[진행] 재무 데이터 출력: " + str(nStockIndex + 1) + " / " + str(nStockLen) + " - " + astStockInfor[nStockIndex]['Name']);
 
     # 그래프 출력
     SetGraphXlsxData(len(astKospiInfor), len(astStockInfor));
+    PrintProgress(u"[진행] 그래프 출력");
     PrintProgress(u"[완료] 엑셀 취합");
 
 # Date & 가격을 얻는 함수 (코스피 / 코스닥 / 일반종목)
