@@ -242,6 +242,17 @@ def COMPANY_GetStockFinanceInfor(nName, nCode, astStockInfor):
     stStockInfor['배당률'] = stSplit35110.replace(',', '');
     stStockInfor['배당률'] = stStockInfor['배당률'].replace(' ', '');
 
+    astTable4Len = len(astTable4);
+    astTable4_1M = astTable4[astTable4Len - 4].split(u'\n');
+    astTable4_3M = astTable4[astTable4Len - 3].split(u'\n');
+    astTable4_6M = astTable4[astTable4Len - 2].split(u'\n');
+    astTable4_1Y = astTable4[astTable4Len - 1].split(u'\n');
+
+    stStockInfor['1M'] = astTable4_1M[len(astTable4_1M) - 1].replace('\r', '').replace(' ', '').replace(',', '');
+    stStockInfor['3M'] = astTable4_3M[len(astTable4_3M) - 1].replace('\r', '').replace(' ', '').replace(',', '');
+    stStockInfor['6M'] = astTable4_6M[len(astTable4_6M) - 1].replace('\r', '').replace(' ', '').replace(',', '');
+    stStockInfor['1Y'] = astTable4_1Y[0].replace('\r', '').replace(' ', '').replace(',', '');
+
     astYearDataList = [];
     astQuaterDataList = [];
     COMPANY_GetFinance(stStockInfor['WebCode'], astYearDataList, astQuaterDataList);
@@ -310,6 +321,16 @@ def SetFnXlsxTitle(astStockInfor):
     gstFnSheet.write(0, nColOffset, u"EPS", stNavyFormat);
     nColOffset = nColOffset + 1;
     gstFnSheet.write(0, nColOffset, u"배당률", stNavyFormat);
+    nColOffset = nColOffset + 1;
+
+    gstFnSheet.write(0, nColOffset, u"최근수익률", stNavyFormat);
+    gstFnSheet.write(1, nColOffset, u"1M", stTitleFormat);
+    nColOffset = nColOffset + 1;
+    gstFnSheet.write(1, nColOffset, u"3M", stTitleFormat);
+    nColOffset = nColOffset + 1;
+    gstFnSheet.write(1, nColOffset, u"6M", stTitleFormat);
+    nColOffset = nColOffset + 1;
+    gstFnSheet.write(1, nColOffset, u"1Y", stTitleFormat);
     nColOffset = nColOffset + 1;
 
     nLength = len(stStockInfor['YearDataList']);
@@ -396,6 +417,7 @@ def SetFnXlsxData(nRowOffset, astStockInfor, nStockIndex):
     if (stStockInfor['CurPrice'] != u''):
         gstFnSheet.write(nRowOffset, nColOffset, float(stStockInfor['CurPrice']));
     nColOffset = nColOffset + 1;
+
     if (stStockInfor['PER'] != u''):
         gstFnSheet.write(nRowOffset, nColOffset, float(stStockInfor['PER']));
     nColOffset = nColOffset + 1;
@@ -410,6 +432,19 @@ def SetFnXlsxData(nRowOffset, astStockInfor, nStockIndex):
     nColOffset = nColOffset + 1;
     if (stStockInfor['배당률'] != u''):
         gstFnSheet.write(nRowOffset, nColOffset, float(stStockInfor['배당률']));
+    nColOffset = nColOffset + 1;
+
+    if (stStockInfor['1M'] != u''):
+        gstFnSheet.write(nRowOffset, nColOffset, float(stStockInfor['1M']));
+    nColOffset = nColOffset + 1;
+    if (stStockInfor['3M'] != u''):
+        gstFnSheet.write(nRowOffset, nColOffset, float(stStockInfor['3M']));
+    nColOffset = nColOffset + 1;
+    if (stStockInfor['6M'] != u''):
+        gstFnSheet.write(nRowOffset, nColOffset, float(stStockInfor['6M']));
+    nColOffset = nColOffset + 1;
+    if (stStockInfor['1Y'] != u''):
+        gstFnSheet.write(nRowOffset, nColOffset, float(stStockInfor['1Y']));
     nColOffset = nColOffset + 1;
 
     nLength = len(stStockInfor['YearDataList']);
@@ -510,10 +545,10 @@ def SetSiseXlsxData(nColOffset, astKospiInfor, stStockInfor):
             nPrevPrice = nCurPrice;
         nRowOffset = nRowOffset + 1;
 
-def SetGraphXlsxData(nMaxDateCount, nMaxsStockCount):
+def SetGraphXlsxData(nMaxDateCount, nMaxStockCount):
     nMaxRowOffset = nMaxDateCount + 2;
     nStartFnRowOffset = 3;
-    nEndFnRowOffset = nStartFnRowOffset + nMaxsStockCount - 1;
+    nEndFnRowOffset = nStartFnRowOffset + nMaxStockCount - 1;
     stStartFnRowOffset = str(nStartFnRowOffset);
     stEndFnRowOffset = str(nEndFnRowOffset);
 
@@ -568,7 +603,7 @@ def SetGraphXlsxData(nMaxDateCount, nMaxsStockCount):
 
         nDateRowOffset = nDateIndex + 2;
         stStartTransCell = xl_rowcol_to_cell(nDateRowOffset, nStockColOffset);
-        stEndTransCell = xl_rowcol_to_cell(nDateRowOffset, nStockColOffset + nMaxsStockCount - 1);
+        stEndTransCell = xl_rowcol_to_cell(nDateRowOffset, nStockColOffset + nMaxStockCount - 1);
         stString = "=IFERROR(AVERAGE(" + stStartTransCell + ":" + stEndTransCell + "), \"\")";
         gstGraphSheet.write(nDateRowOffset, nAvgStockColOffset, stString, stRateFormat);
 
@@ -591,8 +626,11 @@ def SetGraphXlsxData(nMaxDateCount, nMaxsStockCount):
         gstGraphSheet.write(nDateRowOffset, nKospiVsColOffset, stString, stRateFormat);
 
 
-    # 선정 종목
-    for nStockIndex in range(nMaxsStockCount):
+    # 선정 종목 (그래프 취합 50개 제한)
+    nStockCount = nMaxStockCount;
+    if (nStockCount > 50):
+        nStockCount = 50;
+    for nStockIndex in range(nStockCount):
         for nRowOffset in range(nMaxRowOffset):
             stStockColOffset = str(nStockIndex + 1);
             stSiseRowOffset = str(nRowOffset + 1);
@@ -606,7 +644,7 @@ def SetGraphXlsxData(nMaxDateCount, nMaxsStockCount):
             else:
                 gstGraphSheet.write(nRowOffset, nStockColOffset + nStockIndex, stString);
 
-    # 선정 종목
+    # 차트 출력
     stChart = gstWorkBook.add_chart({'type':'line'});
     stGraphCell = xl_rowcol_to_cell(nStartFnRowOffset - 1, nStockColOffset);
 
