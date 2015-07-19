@@ -35,6 +35,7 @@ def GetTodayString():
 # Stock 이름과 코드를 얻는 함수
 gastStockList = {};
 def COMPANY_GetStockCode(astStockList): # OUT (gastStockList: 종목 이름 / 코드)
+    PrintProgress(u"[시작] 종목 코드 취합");
     nUrl = 'http://www.krx.co.kr/por_kor/popup/JHPKOR13008.jsp';
     nRequest = requests.post(nUrl, data={'mkt_typ':'S', 'market_gubun': 'allVal'});
 
@@ -54,6 +55,7 @@ def COMPANY_GetStockCode(astStockList): # OUT (gastStockList: 종목 이름 / 코드)
 
 gastStockNameCode = [];
 def COMPANY_GetNameToCode(astStockList, astStockName, astStockNameCode):   # IN (nStock: 종목코드), OUT (stStockInfor: 종목 정보)
+    PrintProgress(u"[시작] 종목 코드 변환");
     stStockNameCode = {};
     nStockOffset = 0;
     nStockCount = len(astStockName);
@@ -73,6 +75,7 @@ def COMPANY_GetNameToCode(astStockList, astStockName, astStockNameCode):   # IN 
 
 gastStockName = [];
 def COMPANY_GetStockName(astStockName, nMaxStockCount):
+    PrintProgress(u"[시작] 종목 리스트 취합");
     nMaxPageRange = 10;
 
     for nPageIndex in range(nMaxPageRange):
@@ -80,7 +83,7 @@ def COMPANY_GetStockName(astStockName, nMaxStockCount):
             break;
 
         anUrl = 'http://finance.naver.com/sise/dividend_list.nhn?sosok=KOSPI&fsq=20144&field=divd_rt&ordering=desc&page=' + str(nPageIndex + 1);
-        stResponse = gnOpener.open(anUrl);
+        stResponse = gnOpener.open(anUrl, timeout=60);
         stPage = stResponse.read();
         stSoup = BeautifulSoup(stPage);
 
@@ -167,18 +170,9 @@ def set_year_and_quater(days, data, year_data_list, quater_data_list) :
 gastYearDataList = [];
 gastQuaterDataList = [];
 def COMPANY_GetFinance(ncode, astYearDataList, astQuaterDataList):
-    nCodeUrl = 'http://companyinfo.stock.naver.com/v1/company/c1010001.aspx?cmp_cd=';
-    nCodeUrl = nCodeUrl + ncode;
-    nResponse = gnOpener.open(nCodeUrl);
-    nPage = nResponse.read();
-    nSoup = BeautifulSoup(nPage);
-    tables = nSoup.findAll('table');
-    astStrip = tables[1].text.split(' ');
-    nStockCode = astStrip[1];
-
     nFinanceUrl = 'http://companyinfo.stock.naver.com/v1/company/cF1001.aspx?finGubun=MAIN&cmp_cd=';
-    nUrl = nFinanceUrl + nStockCode;
-    nResponse = gnOpener.open(nUrl);
+    nUrl = nFinanceUrl + ncode;
+    nResponse = gnOpener.open(nUrl, timeout=60);
     nPage = nResponse.read();
     nSoup = BeautifulSoup(nPage);
 
@@ -196,7 +190,7 @@ def COMPANY_GetStockFinanceInfor(nName, nCode, astStockInfor):
     stStockInfor = {};
     nCodeUrl = 'http://companyinfo.stock.naver.com/v1/company/c1010001.aspx?cmp_cd=';
     nCodeUrl = nCodeUrl + nCode;
-    nResponse = gnOpener.open(nCodeUrl);
+    nResponse = gnOpener.open(nCodeUrl, timeout=60);
     nPage = nResponse.read();
     nSoup = BeautifulSoup(nPage);
     tables = nSoup.findAll('table');
@@ -211,7 +205,8 @@ def COMPANY_GetStockFinanceInfor(nName, nCode, astStockInfor):
     stSplit0 = astSplit[0].split(' ');
     stStockInfor['Name'] = nName;
     stStockInfor['Code'] = nCode;
-    stStockInfor['WebCode'] = stSplit0[1];
+    nSplit0Len = len(stSplit0);
+    stStockInfor['WebCode'] = stSplit0[nSplit0Len - 1];
 
 #    stSplit2 = astSplit[2].split(' : ');
 #    stStockInfor['종목Type'] = stSplit2[0];
@@ -260,12 +255,14 @@ def COMPANY_GetStockFinanceInfor(nName, nCode, astStockInfor):
 
 gastStockInfor = [];
 def COMPANY_GetFinanceInfor(astStockNameCode, astStockInfor):
+    PrintProgress(u"[시작] 종목 정보 취합: " + str(0) + " / " + str(nStockLen));
     nStockLen = len(astStockNameCode);
     for nStockIndex in range(nStockLen):
         COMPANY_GetStockFinanceInfor(astStockNameCode[nStockIndex]['Name'],
                                         astStockNameCode[nStockIndex]['Code'],
                                         astStockInfor);
-        PrintProgress(u"[진행] 종목 정보 취합: " +  str(nStockIndex + 1) + " / " + str(nStockLen) + " - " + astStockNameCode[nStockIndex]['Name']);
+        PrintProgress(u"[진행] 종목 정보 취합: " + str(nStockIndex + 1) + " / " + str(nStockLen) + " - " + astStockNameCode[nStockIndex]['Name']);
+    PrintProgress(u"[완료] 종목 정보 취합: " + str(nStockLen) + " / " + str(nStockLen));
 
 def SetFnXlsxTitle(astStockInfor):
     stStockInfor = astStockInfor[0];
@@ -666,38 +663,40 @@ def COMPANY_WriteExcelFile(astKospiInfor, astStockInfor):
 #gnStockCode             = 'KOSDAQ';     # '2013-03-04' ~
 #gnStockCode             = '014530';     # '2000-0101' ~
 gastStockInfor          = [];
+def SISE_GetNonStockInfor(nStockCode, stStockInfor):   # IN (nStock: 종목코드), OUT (stStockInfor: 종목 정보)
+    stDataInfor = {};
+
+    anReqCode               = {};
+    anReqCode['KOSPI']      = '^KS11';
+    anReqCode['KOSDAQ']     = '^KQ11';
+
+    # nUrl                    = 'http://real-chart.finance.yahoo.com/table.csv?s=' + anReqCode[nStockCode] + '&a=0&b=1&c=1900';
+
+    # Month = a + 1 / Day = b / Year = c
+    nUrl                    = 'http://real-chart.finance.yahoo.com/table.csv?s=' + anReqCode[nStockCode] + '&a=11&b=30&c=2012';
+    stRequest               = requests.get(nUrl);
+    stDataInfor             = pd.read_csv(StringIO(stRequest.content), index_col='Date', parse_dates={'Date'});
+
+    for nIndex in range(stDataInfor.shape[0]):
+        stStock             = {};
+        stStock['Date']     = stDataInfor.index[nIndex]._date_repr[2:]; # 날짜
+        stStock['Price']    = stDataInfor.values[nIndex][3];            # 종가: 'Close'
+        stStockInfor.append(stStock);
+
 def SISE_GetStockInfor(nStockCode, stStockInfor):   # IN (nStock: 종목코드), OUT (stStockInfor: 종목 정보)
     stDataInfor = {};
 
-    if (nStockCode.isdigit()):                      # 일반 종목일 경우
 #        stStartDate             = datetime.datetime(1900, 1, 1);
-        stStartDate             = datetime.datetime(2012, 12, 30);
-        stDataInfor             = web.DataReader(nStockCode + ".KS", "yahoo", stStartDate);
-    else:                                           # 코스피 / 코스닥일 경우
-        anReqCode               = {};
-        anReqCode['KOSPI']      = '^KS11';
-        anReqCode['KOSDAQ']     = '^KQ11';
+    stStartDate             = datetime.datetime(2012, 12, 30);
+    stDataInfor             = web.DataReader(nStockCode + ".KS", "yahoo", stStartDate);
 
-        # nUrl                    = 'http://real-chart.finance.yahoo.com/table.csv?s=' + anReqCode[nStockCode] + '&a=0&b=1&c=1900';
-
-        # Month = a + 1 / Day = b / Year = c
-        nUrl                    = 'http://real-chart.finance.yahoo.com/table.csv?s=' + anReqCode[nStockCode] + '&a=11&b=30&c=2012';
-        stRequest               = requests.get(nUrl);
-        stDataInfor             = pd.read_csv(StringIO(stRequest.content), index_col='Date', parse_dates={'Date'});
-
-    if (nStockCode.isdigit()):                      # 일반 종목일 경우
-        for nIndex in range(stDataInfor.shape[0]):
-            stStockInfor[stDataInfor.index[nIndex]._date_repr[2:]]   = stDataInfor.values[nIndex][3];
-    else:                                           # 코스피 / 코스닥일 경우
-        for nIndex in range(stDataInfor.shape[0]):
-            stStock             = {};
-            stStock['Date']     = stDataInfor.index[nIndex]._date_repr[2:]; # 날짜
-            stStock['Price']    = stDataInfor.values[nIndex][3];            # 종가: 'Close'
-            stStockInfor.append(stStock);
+    for nIndex in range(stDataInfor.shape[0]):
+        stStockInfor[stDataInfor.index[nIndex]._date_repr[2:]]   = stDataInfor.values[nIndex][3];
 
 gastKospiInfor      = [];
 def SISE_GetKospiInfor(astKospiInfor):
-    SISE_GetStockInfor('KOSPI', astKospiInfor);
+    PrintProgress(u"[시작] KOSPI 정보 취합");
+    SISE_GetNonStockInfor('KOSPI', astKospiInfor);
     astKospiInfor.sort();
     PrintProgress(u"[완료] KOSPI 정보 취합");
 
@@ -733,6 +732,7 @@ gstFnSheet.autofilter('E2:JG2');
 gstFnSheet.freeze_panes('C3');
 gstSiseSheet.freeze_panes('D3');
 gstGraphSheet.freeze_panes('E3');
+
 PrintProgress(u"[시작] 엑셀 출력");
 gstWorkBook.close();
 PrintProgress(u"[완료] 엑셀 출력");
