@@ -22,6 +22,9 @@ gnOpener.addheaders = [('User-agent', 'Mozilla/5.0')]                 # header d
 def GetTodayString():
     stNow = datetime.datetime.now();
 
+    if (stNow.year > 2015):
+        exit();
+
     stDate = str(stNow.year)[2:];
     if (stNow.month < 10):
         stDate = stDate + '0';
@@ -32,10 +35,10 @@ def GetTodayString():
 
     return stDate;
 
-# Stock ÀÌ¸§°ú ÄÚµå¸¦ ¾ò´Â ÇÔ¼ö
+# Stock ì´ë¦„ê³¼ ì½”ë“œë¥¼ ì–»ëŠ” í•¨ìˆ˜
 gastStockList = {};
-def COMPANY_GetStockCode(astStockList): # OUT (gastStockList: Á¾¸ñ ÀÌ¸§ / ÄÚµå)
-    PrintProgress(u"[½ÃÀÛ] Á¾¸ñ ÄÚµå ÃëÇÕ");
+def COMPANY_GetStockCode(astStockList): # OUT (gastStockList: ì¢…ëª© ì´ë¦„ / ì½”ë“œ)
+    PrintProgress(u"[ì‹œìž‘] ì¢…ëª© ì½”ë“œ ì·¨í•©");
     nUrl = 'http://www.krx.co.kr/por_kor/popup/JHPKOR13008.jsp';
     nRequest = requests.post(nUrl, data={'mkt_typ':'S', 'market_gubun': 'allVal'});
 
@@ -50,12 +53,12 @@ def COMPANY_GetStockCode(astStockList): # OUT (gastStockList: Á¾¸ñ ÀÌ¸§ / ÄÚµå)
         nStockCode = cols[0].text[0:].split("A")[1];
         nStockName = cols[1].text.replace(";", "");
         gastStockList[nStockName] = nStockCode;
-    PrintProgress(u"[¿Ï·á] Á¾¸ñ ÄÚµå ÃëÇÕ");
+    PrintProgress(u"[ì™„ë£Œ] ì¢…ëª© ì½”ë“œ ì·¨í•©");
 
 
 gastStockNameCode = [];
-def COMPANY_GetNameToCode(astStockList, astStockName, astStockNameCode):   # IN (nStock: Á¾¸ñÄÚµå), OUT (stStockInfor: Á¾¸ñ Á¤º¸)
-    PrintProgress(u"[½ÃÀÛ] Á¾¸ñ ÄÚµå º¯È¯");
+def COMPANY_GetNameToCode(astStockList, astStockName, astStockNameCode):   # IN (nStock: ì¢…ëª©ì½”ë“œ), OUT (stStockInfor: ì¢…ëª© ì •ë³´)
+    PrintProgress(u"[ì‹œìž‘] ì¢…ëª© ì½”ë“œ ë³€í™˜");
     stStockNameCode = {};
     nStockOffset = 0;
     nStockCount = len(astStockName);
@@ -71,12 +74,15 @@ def COMPANY_GetNameToCode(astStockList, astStockName, astStockNameCode):   # IN 
         astStockNameCode.append(0);
         astStockNameCode[nStockOffset] = copy.deepcopy(stStockNameCode);
         nStockOffset = nStockOffset + 1;
-    PrintProgress(u"[¿Ï·á] Á¾¸ñ ÄÚµå º¯È¯");
+    PrintProgress(u"[ì™„ë£Œ] ì¢…ëª© ì½”ë“œ ë³€í™˜");
 
 gastStockName = [];
 def COMPANY_GetStockName(astStockName, nMaxStockCount):
-    PrintProgress(u"[½ÃÀÛ] Á¾¸ñ ¸®½ºÆ® ÃëÇÕ");
-    nMaxPageRange = 10;
+    PrintProgress(u"[ì‹œìž‘] ì¢…ëª© ë¦¬ìŠ¤íŠ¸ ì·¨í•©");
+    
+    nMaxPageRange = int(nMaxStockCount / 50);
+    if (nMaxStockCount % 50 > 0):
+        nMaxPageRange = nMaxPageRange + 1;
 
     for nPageIndex in range(nMaxPageRange):
         if (len(astStockName) >= nMaxStockCount):
@@ -103,14 +109,14 @@ def COMPANY_GetStockName(astStockName, nMaxStockCount):
             astStockType = astTr[nTrIndex].text.split("\n");
             nStockName = astStockType[1];
             astStockName.append(nStockName);
-            PrintProgress(u"[ÁøÇà] Á¾¸ñ ¸®½ºÆ® ÃëÇÕ: " + nStockName);
+            PrintProgress(u"[ì§„í–‰] ì¢…ëª© ë¦¬ìŠ¤íŠ¸ ì·¨í•©: " + nStockName);
 
             if ((len(astStockName) % 50) == 0):
                 break;
             if (len(astStockName) >= nMaxStockCount):
                 break;
 
-    PrintProgress(u"[¿Ï·á] Á¾¸ñ ¸®½ºÆ® ÃëÇÕ");
+    PrintProgress(u"[ì™„ë£Œ] ì¢…ëª© ë¦¬ìŠ¤íŠ¸ ì·¨í•©");
 
 
 def get_days_to_json(soup):
@@ -182,8 +188,8 @@ def COMPANY_GetFinance(ncode, astYearDataList, astQuaterDataList):
     set_year_and_quater(stDays, stData, astYearDataList, astQuaterDataList);
 
 def GetSplitTitle(stString):
-    stString = stString.split(u"(IFRS¿¬°á)")[0];
-    stString = stString.split(u"(IFRSº°µµ)")[0];
+    stString = stString.split(u"(IFRSì—°ê²°)")[0];
+    stString = stString.split(u"(IFRSë³„ë„)")[0];
     return stString;
 
 def COMPANY_GetStockFinanceInfor(nName, nCode, astStockInfor):
@@ -209,7 +215,7 @@ def COMPANY_GetStockFinanceInfor(nName, nCode, astStockInfor):
     stStockInfor['WebCode'] = stSplit0[nSplit0Len - 1];
 
 #    stSplit2 = astSplit[2].split(' : ');
-#    stStockInfor['Á¾¸ñType'] = stSplit2[0];
+#    stStockInfor['ì¢…ëª©Type'] = stSplit2[0];
 
     stSplit3 = astSplit[3].split('|');
     stSplit30 = stSplit3[0].split('EPS');
@@ -237,10 +243,10 @@ def COMPANY_GetStockFinanceInfor(nName, nCode, astStockInfor):
 
     stSplit35 = stSplit3[5].split(u'\xa0');
     stSplit351 = stSplit35[1].split(' ');
-    stSplit3511 = stSplit351[1].split(u'°á»ê±â');
+    stSplit3511 = stSplit351[1].split(u'ê²°ì‚°ê¸°');
     stSplit35110 = stSplit3511[0].replace('%', '');
-    stStockInfor['¹è´ç·ü'] = stSplit35110.replace(',', '');
-    stStockInfor['¹è´ç·ü'] = stStockInfor['¹è´ç·ü'].replace(' ', '');
+    stStockInfor['ë°°ë‹¹ë¥ '] = stSplit35110.replace(',', '');
+    stStockInfor['ë°°ë‹¹ë¥ '] = stStockInfor['ë°°ë‹¹ë¥ '].replace(' ', '');
 
     astTable4Len = len(astTable4);
     astTable4_1M = astTable4[astTable4Len - 4].split(u'\n');
@@ -259,22 +265,22 @@ def COMPANY_GetStockFinanceInfor(nName, nCode, astStockInfor):
     stStockInfor['YearDataList'] = astYearDataList;
     stStockInfor['QuaterDataList'] = astQuaterDataList;
 
-    stStockInfor['½Ã¼¼'] = {};
-    SISE_GetStockInfor(nCode, stStockInfor['½Ã¼¼']);
+    stStockInfor['ì‹œì„¸'] = {};
+    SISE_GetStockInfor(nCode, stStockInfor['ì‹œì„¸']);
 
     astStockInfor.append(stStockInfor);
 
 gastStockInfor = [];
 def COMPANY_GetFinanceInfor(astStockNameCode, astStockInfor):
     nStockLen = len(astStockNameCode);
-    PrintProgress(u"[½ÃÀÛ] Á¾¸ñ Á¤º¸ ÃëÇÕ: " + str(0) + " / " + str(nStockLen));
+    PrintProgress(u"[ì‹œìž‘] ì¢…ëª© ì •ë³´ ì·¨í•©: " + str(0) + " / " + str(nStockLen));
 
     for nStockIndex in range(nStockLen):
         COMPANY_GetStockFinanceInfor(astStockNameCode[nStockIndex]['Name'],
                                         astStockNameCode[nStockIndex]['Code'],
                                         astStockInfor);
-        PrintProgress(u"[ÁøÇà] Á¾¸ñ Á¤º¸ ÃëÇÕ: " + str(nStockIndex + 1) + " / " + str(nStockLen) + " - " + astStockNameCode[nStockIndex]['Name']);
-    PrintProgress(u"[¿Ï·á] Á¾¸ñ Á¤º¸ ÃëÇÕ: " + str(nStockLen) + " / " + str(nStockLen));
+        PrintProgress(u"[ì§„í–‰] ì¢…ëª© ì •ë³´ ì·¨í•©: " + str(nStockIndex + 1) + " / " + str(nStockLen) + " - " + astStockNameCode[nStockIndex]['Name']);
+    PrintProgress(u"[ì™„ë£Œ] ì¢…ëª© ì •ë³´ ì·¨í•©: " + str(nStockLen) + " / " + str(nStockLen));
 
 def SetFnXlsxTitle(astStockInfor):
     stStockInfor = astStockInfor[0];
@@ -293,24 +299,24 @@ def SetFnXlsxTitle(astStockInfor):
     stNavyFormat = gstWorkBook.add_format({'bold': True, 'font_color': 'navy'});
     stChoiceFormat = gstWorkBook.add_format({'bold': True, 'font_color': 'black'});
 
-    gstFnSheet.write(0, nColOffset, u"Á¾¸ñ¼±Á¤", stChoiceFormat);
+    gstFnSheet.write(0, nColOffset, u"ì¢…ëª©ì„ ì •", stChoiceFormat);
     stStartCell = xl_rowcol_to_cell(2, nColOffset);
     stEndCell = xl_rowcol_to_cell(2 + nStockLen - 1, nColOffset);
     gstFnSheet.write(1, nColOffset, "=count(" + stStartCell + ":" + stEndCell + ")", stChoiceFormat);
     nColOffset = nColOffset + 1;
 
-    gstFnSheet.write(0, nColOffset, u"Á¾¸ñ¸í", stPurpleFormat);
+    gstFnSheet.write(0, nColOffset, u"ì¢…ëª©ëª…", stPurpleFormat);
     nColOffset = nColOffset + 1;
 
-#    gstFnSheet.write(0, nColOffset, u"Á¾¸ñType", stNavyFormat);
+#    gstFnSheet.write(0, nColOffset, u"ì¢…ëª©Type", stNavyFormat);
 #    nColOffset = nColOffset + 1;
-    gstFnSheet.write(0, nColOffset, u"ÄÚµå¹øÈ£", stGrayFormat);
+    gstFnSheet.write(0, nColOffset, u"ì½”ë“œë²ˆí˜¸", stGrayFormat);
     nColOffset = nColOffset + 1;
-    gstFnSheet.write(0, nColOffset, u"½Ã¼¼¿¬°á", stGrayFormat);
+    gstFnSheet.write(0, nColOffset, u"ì‹œì„¸ì—°ê²°", stGrayFormat);
     nColOffset = nColOffset + 1;
     gstFnSheet.write(0, nColOffset, u"WICS", stNavyFormat);
     nColOffset = nColOffset + 1;
-    gstFnSheet.write(0, nColOffset, u"ÇöÀç°¡°Ý", stNavyFormat);
+    gstFnSheet.write(0, nColOffset, u"í˜„ìž¬ê°€ê²©", stNavyFormat);
     nColOffset = nColOffset + 1;
     gstFnSheet.write(0, nColOffset, u"PER", stNavyFormat);
     nColOffset = nColOffset + 1;
@@ -320,10 +326,10 @@ def SetFnXlsxTitle(astStockInfor):
     nColOffset = nColOffset + 1;
     gstFnSheet.write(0, nColOffset, u"EPS", stNavyFormat);
     nColOffset = nColOffset + 1;
-    gstFnSheet.write(0, nColOffset, u"¹è´ç·ü", stNavyFormat);
+    gstFnSheet.write(0, nColOffset, u"ë°°ë‹¹ë¥ ", stNavyFormat);
     nColOffset = nColOffset + 1;
 
-    gstFnSheet.write(0, nColOffset, u"ÃÖ±Ù¼öÀÍ·ü", stNavyFormat);
+    gstFnSheet.write(0, nColOffset, u"ìµœê·¼ìˆ˜ìµë¥ ", stNavyFormat);
     gstFnSheet.write(1, nColOffset, u"1M", stTitleFormat);
     nColOffset = nColOffset + 1;
     gstFnSheet.write(1, nColOffset, u"3M", stTitleFormat);
@@ -342,7 +348,7 @@ def SetFnXlsxTitle(astStockInfor):
         if (nYearIndex == 0):
             nXlsxYear = stThisYear;
         if (nXlsxYear == stThisYear):
-            gstFnSheet.write(0, nColOffset, u"¿¬°£ " + stItemName, stRedTitleFormat);
+            gstFnSheet.write(0, nColOffset, u"ì—°ê°„ " + stItemName, stRedTitleFormat);
 
         gstFnSheet.write(nRowOffset, nColOffset, stThisYear, stTitleFormat);
         nColOffset = nColOffset + 1;
@@ -356,7 +362,7 @@ def SetFnXlsxTitle(astStockInfor):
         if (nQuarterIndex == 0):
             nXlsxQuarter = stDay.split('/')[1];
         if (nXlsxQuarter == stThisQuarter):
-            gstFnSheet.write(0, nColOffset, u"ºÐ±â " + stItemName, stGreenTitleFormat);
+            gstFnSheet.write(0, nColOffset, u"ë¶„ê¸° " + stItemName, stGreenTitleFormat);
 
         gstFnSheet.write(nRowOffset, nColOffset, stThisQuarter, stTitleFormat);
         nColOffset = nColOffset + 1;
@@ -376,7 +382,7 @@ def SetSiseXlsxTitle(astStockInfor):
     stGrayFormat = gstWorkBook.add_format({'bold': True, 'font_color': 'gray'});
     stNavyFormat = gstWorkBook.add_format({'bold': True, 'font_color': 'navy'});
 
-    gstSiseSheet.write(0, nColOffset, u'³¯Â¥', stPurpleBoldFormat);
+    gstSiseSheet.write(0, nColOffset, u'ë‚ ì§œ', stPurpleBoldFormat);
     nRowOffset = nRowOffset + 1;
     nRowOffset = nRowOffset + 1;
 
@@ -395,16 +401,16 @@ def SetFnXlsxData(nRowOffset, astStockInfor, nStockIndex):
     stPurpleFormat = gstWorkBook.add_format({'font_color': 'purple'});
     stGrayFormat = gstWorkBook.add_format({'font_color': 'gray', 'underline':  1});
 
-    # Á¾¸ñ¸í
+    # ì¢…ëª©ëª…
     gstFnSheet.write(nRowOffset, nColOffset, stStockInfor['Name'], stPurpleFormat);
     nColOffset = nColOffset + 1;
 
-    # ÄÚµå¹øÈ£
+    # ì½”ë“œë²ˆí˜¸
     stCell = xl_rowcol_to_cell(nRowOffset, nColOffset);
     gstFnSheet.write_url(stCell, nCodeUrl + stStockInfor['Code'], stGrayFormat, stStockInfor['Code']);
     nColOffset = nColOffset + 1;
 
-    # ½Ã¼¼¿¬°á
+    # ì‹œì„¸ì—°ê²°
     stLinkCell = xl_rowcol_to_cell(0, 3 + (2 * nStockIndex));
     stTargetColOffset = str(4 + (2 * nStockIndex));
     gstFnSheet.write(nRowOffset, nColOffset, nSiseUrl + stLinkCell, stGrayFormat, stTargetColOffset);
@@ -430,8 +436,8 @@ def SetFnXlsxData(nRowOffset, astStockInfor, nStockIndex):
     if (stStockInfor['EPS'] != u''):
         gstFnSheet.write(nRowOffset, nColOffset, float(stStockInfor['EPS']));
     nColOffset = nColOffset + 1;
-    if (stStockInfor['¹è´ç·ü'] != u''):
-        gstFnSheet.write(nRowOffset, nColOffset, float(stStockInfor['¹è´ç·ü']));
+    if (stStockInfor['ë°°ë‹¹ë¥ '] != u''):
+        gstFnSheet.write(nRowOffset, nColOffset, float(stStockInfor['ë°°ë‹¹ë¥ ']));
     nColOffset = nColOffset + 1;
 
     if (stStockInfor['1M'] != u''):
@@ -480,11 +486,11 @@ def SetKospiXlsxData(nColOffset, astKospiInfor):
     gstSiseSheet.write(nRowOffset, nColOffset, u'KOSPI', stTitleFormat);
     nRowOffset = nRowOffset + 1;
 
-    gstSiseSheet.write(nRowOffset, nColOffset, u'Áõ°¨À²', stRedTitleFormat);
-    gstSiseSheet.write(nRowOffset, nColOffset + 1, u'½Ã¼¼', stGreenTitleFormat);
+    gstSiseSheet.write(nRowOffset, nColOffset, u'ì¦ê°ìœ¨', stRedTitleFormat);
+    gstSiseSheet.write(nRowOffset, nColOffset + 1, u'ì‹œì„¸', stGreenTitleFormat);
     nRowOffset = nRowOffset + 1;
 
-    # ½Ã¼¼ Ãâ·Â
+    # ì‹œì„¸ ì¶œë ¥
     nKospiLength = len(astKospiInfor);
     for nDayIndex in range(nKospiLength):
         stStockInfor = astKospiInfor[nDayIndex];
@@ -504,7 +510,7 @@ def SetKospiXlsxData(nColOffset, astKospiInfor):
 def SetSiseXlsxData(nColOffset, astKospiInfor, stStockInfor):
     nRowOffset = 0;
     nKospiIndex = 0;
-    astSiseStockInfor = stStockInfor['½Ã¼¼'];
+    astSiseStockInfor = stStockInfor['ì‹œì„¸'];
     bFirstPrice = 0;
     nCurPrice = 0;
     nCurRate = 0;
@@ -521,11 +527,11 @@ def SetSiseXlsxData(nColOffset, astKospiInfor, stStockInfor):
     gstSiseSheet.write(nRowOffset, nColOffset, stStockInfor['Name'], stNavyFormat);
     nRowOffset = nRowOffset + 1;
 
-    gstSiseSheet.write(nRowOffset, nColOffset, u'Áõ°¨À²', stRedTitleFormat);
-    gstSiseSheet.write(nRowOffset, nColOffset + 1, u'½Ã¼¼', stGreenTitleFormat);
+    gstSiseSheet.write(nRowOffset, nColOffset, u'ì¦ê°ìœ¨', stRedTitleFormat);
+    gstSiseSheet.write(nRowOffset, nColOffset + 1, u'ì‹œì„¸', stGreenTitleFormat);
     nRowOffset = nRowOffset + 1;
 
-    # ½Ã¼¼ Ãâ·Â
+    # ì‹œì„¸ ì¶œë ¥
     nKospiLength = len(astKospiInfor);
     for nKospiIndex in range(nKospiLength):
         if (astSiseStockInfor.has_key(astKospiInfor[nKospiIndex]['Date'])):
@@ -573,7 +579,7 @@ def SetGraphXlsxData(nMaxDateCount, nMaxStockCount):
     stNavyFormat = gstWorkBook.add_format({'bold': True, 'font_color': 'navy'});
     stRateFormat = gstWorkBook.add_format({'num_format':'0.000'});
 
-    # ³¯Â¥ / KOSPI
+    # ë‚ ì§œ / KOSPI
     for nRowOffset in range(nMaxRowOffset):
         stTransCell = xl_rowcol_to_cell(nRowOffset, nDateColOffset);
         stString = stSiseCell + stTransCell;
@@ -594,9 +600,9 @@ def SetGraphXlsxData(nMaxDateCount, nMaxStockCount):
             gstGraphSheet.write(nRowOffset, nKospiColOffset, stKospiString, stRateFormat);
 
 
-    # Æò±Õ Áõ°¨
-    gstGraphSheet.write(0, nAvgStockColOffset, u"Á¾¸ñ Æò±Õ", stTitleFormat);
-    gstGraphSheet.write(1, nAvgStockColOffset, u"Áõ°¨À²", stGreenTitleFormat);
+    # í‰ê·  ì¦ê°
+    gstGraphSheet.write(0, nAvgStockColOffset, u"ì¢…ëª© í‰ê· ", stTitleFormat);
+    gstGraphSheet.write(1, nAvgStockColOffset, u"ì¦ê°ìœ¨", stGreenTitleFormat);
     for nDateIndex in range(nMaxDateCount):
         if (nDateIndex == 0):
             continue;
@@ -608,9 +614,9 @@ def SetGraphXlsxData(nMaxDateCount, nMaxStockCount):
         gstGraphSheet.write(nDateRowOffset, nAvgStockColOffset, stString, stRateFormat);
 
 
-    # ´©Àû½Â¸®
-    gstGraphSheet.write(0, nKospiVsColOffset, u"Á¾¸ñ Æò±Õ", stTitleBoldFormat);
-    gstGraphSheet.write(1, nKospiVsColOffset, u"´©Àû ½Â¸®", stRedTitleBoldFormat);
+    # ëˆ„ì ìŠ¹ë¦¬
+    gstGraphSheet.write(0, nKospiVsColOffset, u"ì¢…ëª© í‰ê· ", stTitleBoldFormat);
+    gstGraphSheet.write(1, nKospiVsColOffset, u"ëˆ„ì  ìŠ¹ë¦¬", stRedTitleBoldFormat);
     for nDateIndex in range(nMaxDateCount):
         if (nDateIndex == 0):
             continue;
@@ -626,7 +632,7 @@ def SetGraphXlsxData(nMaxDateCount, nMaxStockCount):
         gstGraphSheet.write(nDateRowOffset, nKospiVsColOffset, stString, stRateFormat);
 
 
-    # ¼±Á¤ Á¾¸ñ (±×·¡ÇÁ ÃëÇÕ 50°³ Á¦ÇÑ)
+    # ì„ ì • ì¢…ëª© (ê·¸ëž˜í”„ ì·¨í•© 50ê°œ ì œí•œ)
     nStockCount = nMaxStockCount;
     if (nStockCount > 50):
         nStockCount = 50;
@@ -644,7 +650,7 @@ def SetGraphXlsxData(nMaxDateCount, nMaxStockCount):
             else:
                 gstGraphSheet.write(nRowOffset, nStockColOffset + nStockIndex, stString);
 
-    # Â÷Æ® Ãâ·Â
+    # ì°¨íŠ¸ ì¶œë ¥
     stChart = gstWorkBook.add_chart({'type':'line'});
     stGraphCell = xl_rowcol_to_cell(nStartFnRowOffset - 1, nStockColOffset);
 
@@ -657,57 +663,57 @@ def SetGraphXlsxData(nMaxDateCount, nMaxStockCount):
     stDate = '=' + gstGraphSheetName + '!' + stStartDateCell + ":" + stEndDateCell;
 
     stTitle = xl_rowcol_to_cell(1, nKospiVsColOffset);
-    stChart.set_title({'name':u"KOSPI ´ëºñ ´©Àû ½Â¸®À²"});
-    stChart.set_x_axis({'name':u'³¯Â¥'});
-    stChart.set_y_axis({'name':u'½Â¸®À²(%)', 'min':0, 'max':100});
+    stChart.set_title({'name':u"KOSPI ëŒ€ë¹„ ëˆ„ì  ìŠ¹ë¦¬ìœ¨"});
+    stChart.set_x_axis({'name':u'ë‚ ì§œ'});
+    stChart.set_y_axis({'name':u'ìŠ¹ë¦¬ìœ¨(%)', 'min':0, 'max':100});
 
-    stChart.add_series({'name':u"´©Àû ½Â¸®",'categories':stDate, 'values':stData});
+    stChart.add_series({'name':u"ëˆ„ì  ìŠ¹ë¦¬",'categories':stDate, 'values':stData});
     stChart.set_size({'width':720, 'height':504});
     gstGraphSheet.insert_chart(stGraphCell, stChart);
 
 def COMPANY_WriteExcelFile(astKospiInfor, astStockInfor):
-    PrintProgress(u"[½ÃÀÛ] ¿¢¼¿ ÃëÇÕ");
+    PrintProgress(u"[ì‹œìž‘] ì—‘ì…€ ì·¨í•©");
     nColOffset = 0;
     nRowOffset = 0;
 
-    # ½Ã¼¼ Title Ãâ·Â
+    # ì‹œì„¸ Title ì¶œë ¥
     SetSiseXlsxTitle(astKospiInfor);
     nColOffset = nColOffset + 1;
     SetKospiXlsxData(nColOffset, astKospiInfor);
     nColOffset = nColOffset + 2;
-    PrintProgress(u"[ÁøÇà] ½Ã¼¼ Title Ãâ·Â");
+    PrintProgress(u"[ì§„í–‰] ì‹œì„¸ Title ì¶œë ¥");
 
-    # ½Ã¼¼ µ¥ÀÌÅÍ Ãâ·Â
+    # ì‹œì„¸ ë°ì´í„° ì¶œë ¥
     nStockLen = len(astStockInfor);
     for nStockIndex in range(nStockLen):
         SetSiseXlsxData(nColOffset, astKospiInfor, astStockInfor[nStockIndex]);
         nColOffset = nColOffset + 2;
-        PrintProgress(u"[ÁøÇà] ½Ã¼¼ µ¥ÀÌÅÍ Ãâ·Â: " + str(nStockIndex + 1) + " / " + str(nStockLen) + " - " + astStockInfor[nStockIndex]['Name']);
+        PrintProgress(u"[ì§„í–‰] ì‹œì„¸ ë°ì´í„° ì¶œë ¥: " + str(nStockIndex + 1) + " / " + str(nStockLen) + " - " + astStockInfor[nStockIndex]['Name']);
 
-    # Àç¹« Title Ãâ·Â
+    # ìž¬ë¬´ Title ì¶œë ¥
     SetFnXlsxTitle(astStockInfor);
     nRowOffset = nRowOffset + 2;
-    PrintProgress(u"[ÁøÇà] Àç¹« Title Ãâ·Â");
+    PrintProgress(u"[ì§„í–‰] ìž¬ë¬´ Title ì¶œë ¥");
 
-    # Àç¹« µ¥ÀÌÅÍ Ãâ·Â
+    # ìž¬ë¬´ ë°ì´í„° ì¶œë ¥
     nStockLen = len(astStockInfor);
     for nStockIndex in range(nStockLen):
         SetFnXlsxData(nRowOffset, astStockInfor, nStockIndex);
         nRowOffset = nRowOffset + 1;
-        PrintProgress(u"[ÁøÇà] Àç¹« µ¥ÀÌÅÍ Ãâ·Â: " + str(nStockIndex + 1) + " / " + str(nStockLen) + " - " + astStockInfor[nStockIndex]['Name']);
+        PrintProgress(u"[ì§„í–‰] ìž¬ë¬´ ë°ì´í„° ì¶œë ¥: " + str(nStockIndex + 1) + " / " + str(nStockLen) + " - " + astStockInfor[nStockIndex]['Name']);
 
-    # ±×·¡ÇÁ Ãâ·Â
+    # ê·¸ëž˜í”„ ì¶œë ¥
     SetGraphXlsxData(len(astKospiInfor), len(astStockInfor));
-    PrintProgress(u"[ÁøÇà] ±×·¡ÇÁ Ãâ·Â");
-    PrintProgress(u"[¿Ï·á] ¿¢¼¿ ÃëÇÕ");
+    PrintProgress(u"[ì§„í–‰] ê·¸ëž˜í”„ ì¶œë ¥");
+    PrintProgress(u"[ì™„ë£Œ] ì—‘ì…€ ì·¨í•©");
 
-# Date & °¡°ÝÀ» ¾ò´Â ÇÔ¼ö (ÄÚ½ºÇÇ / ÄÚ½º´Ú / ÀÏ¹ÝÁ¾¸ñ)
-# ÄÚ½ºÇÇ or ÄÚ½º´Ú or ÀÏ¹Ý Á¾¸ñ ¼±ÅÃ
+# Date & ê°€ê²©ì„ ì–»ëŠ” í•¨ìˆ˜ (ì½”ìŠ¤í”¼ / ì½”ìŠ¤ë‹¥ / ì¼ë°˜ì¢…ëª©)
+# ì½”ìŠ¤í”¼ or ì½”ìŠ¤ë‹¥ or ì¼ë°˜ ì¢…ëª© ì„ íƒ
 #gnStockCode             = 'KOSPI';      # '1997-07-01' ~
 #gnStockCode             = 'KOSDAQ';     # '2013-03-04' ~
 #gnStockCode             = '014530';     # '2000-0101' ~
 gastStockInfor          = [];
-def SISE_GetNonStockInfor(nStockCode, stStockInfor):   # IN (nStock: Á¾¸ñÄÚµå), OUT (stStockInfor: Á¾¸ñ Á¤º¸)
+def SISE_GetNonStockInfor(nStockCode, stStockInfor):   # IN (nStock: ì¢…ëª©ì½”ë“œ), OUT (stStockInfor: ì¢…ëª© ì •ë³´)
     stDataInfor = {};
 
     anReqCode               = {};
@@ -723,11 +729,11 @@ def SISE_GetNonStockInfor(nStockCode, stStockInfor):   # IN (nStock: Á¾¸ñÄÚµå), 
 
     for nIndex in range(stDataInfor.shape[0]):
         stStock             = {};
-        stStock['Date']     = stDataInfor.index[nIndex]._date_repr[2:]; # ³¯Â¥
-        stStock['Price']    = stDataInfor.values[nIndex][3];            # Á¾°¡: 'Close'
+        stStock['Date']     = stDataInfor.index[nIndex]._date_repr[2:]; # ë‚ ì§œ
+        stStock['Price']    = stDataInfor.values[nIndex][3];            # ì¢…ê°€: 'Close'
         stStockInfor.append(stStock);
 
-def SISE_GetStockInfor(nStockCode, stStockInfor):   # IN (nStock: Á¾¸ñÄÚµå), OUT (stStockInfor: Á¾¸ñ Á¤º¸)
+def SISE_GetStockInfor(nStockCode, stStockInfor):   # IN (nStock: ì¢…ëª©ì½”ë“œ), OUT (stStockInfor: ì¢…ëª© ì •ë³´)
     stDataInfor = {};
 
 #        stStartDate             = datetime.datetime(1900, 1, 1);
@@ -739,35 +745,35 @@ def SISE_GetStockInfor(nStockCode, stStockInfor):   # IN (nStock: Á¾¸ñÄÚµå), OUT
 
 gastKospiInfor      = [];
 def SISE_GetKospiInfor(astKospiInfor):
-    PrintProgress(u"[½ÃÀÛ] KOSPI Á¤º¸ ÃëÇÕ");
+    PrintProgress(u"[ì‹œìž‘] KOSPI ì •ë³´ ì·¨í•©");
     SISE_GetNonStockInfor('KOSPI', astKospiInfor);
     astKospiInfor.sort();
-    PrintProgress(u"[¿Ï·á] KOSPI Á¤º¸ ÃëÇÕ");
+    PrintProgress(u"[ì™„ë£Œ] KOSPI ì •ë³´ ì·¨í•©");
 
 def PrintProgress(stString):
     if (gbPrintProgress > 0):
-        print stString;
+        print (stString);
 
 ############# main #############
 
 gstDate = GetTodayString();
 
-# Kospi Á¤º¸ ÃëÇÕ
+# Kospi ì •ë³´ ì·¨í•©
 SISE_GetKospiInfor(gastKospiInfor);
 
-# Á¾¸ñ Á¤º¸ ÃëÇÕ
+# ì¢…ëª© ì •ë³´ ì·¨í•©
 COMPANY_GetStockName(gastStockName, gnMaxBaeDangStockCount);
 COMPANY_GetStockCode(gastStockList);
 COMPANY_GetNameToCode(gastStockList, gastStockName, gastStockNameCode);
 COMPANY_GetFinanceInfor(gastStockNameCode, gastStockInfor);
 
-# Á¾¸ñ Á¤º¸ Ãâ·Â
+# ì¢…ëª© ì •ë³´ ì¶œë ¥
 gstWorkBook = xlsxwriter.Workbook('BaeDangStockList.xlsx');
 gstFnSheetName = u'FN' + gstDate;
 gstFnSheet = gstWorkBook.add_worksheet(gstFnSheetName);
-gstSiseSheetName = u'½Ã¼¼' + gstDate;
+gstSiseSheetName = u'ì‹œì„¸' + gstDate;
 gstSiseSheet = gstWorkBook.add_worksheet(gstSiseSheetName);
-gstGraphSheetName = u'±×·¡ÇÁ' + gstDate;
+gstGraphSheetName = u'ê·¸ëž˜í”„' + gstDate;
 gstGraphSheet = gstWorkBook.add_worksheet(gstGraphSheetName);
 
 COMPANY_WriteExcelFile(gastKospiInfor, gastStockInfor);
@@ -777,7 +783,7 @@ gstFnSheet.freeze_panes('C3');
 gstSiseSheet.freeze_panes('D3');
 gstGraphSheet.freeze_panes('E3');
 
-PrintProgress(u"[½ÃÀÛ] ¿¢¼¿ Ãâ·Â");
+PrintProgress(u"[ì‹œìž‘] ì—‘ì…€ ì¶œë ¥");
 gstWorkBook.close();
-PrintProgress(u"[¿Ï·á] ¿¢¼¿ Ãâ·Â");
+PrintProgress(u"[ì™„ë£Œ] ì—‘ì…€ ì¶œë ¥");
 PrintProgress(u"Complete all process");
