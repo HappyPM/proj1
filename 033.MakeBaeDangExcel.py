@@ -59,7 +59,7 @@ def COMPANY_GetStockCode(astStockList): # OUT (gastChangeStockNameCodeList: 종�
 
 gastStockNameCodeInfor = [];
 def COMPANY_GetNameToCode(nStockCode, astStockList, astStockName, astStockNameCode):   # IN (nStock: 종목코드), OUT (stStockInfor: 종목 정보)
-    PrintProgress(u"[시작] 종목 코드 변환");
+    PrintProgress(u"[시작] " + nStockCode + u" 종목 코드 변환");
     stStockNameCode = {};
     nStockOffset = len(astStockNameCode);
     nStockCount = len(astStockName);
@@ -76,20 +76,18 @@ def COMPANY_GetNameToCode(nStockCode, astStockList, astStockName, astStockNameCo
         astStockNameCode.append(0);
         astStockNameCode[nStockOffset] = copy.deepcopy(stStockNameCode);
         nStockOffset = nStockOffset + 1;
-    PrintProgress(u"[완료] 종목 코드 변환");
+    PrintProgress(u"[완료] " + nStockCode + u" 종목 코드 변환");
 
 gastKospiStockName = [];
 gastKosdaqStockName = [];
 def COMPANY_GetStockName(nStockCode, astStockName, nMaxStockCount):
-    PrintProgress(u"[시작] 종목 리스트 취합");
+    PrintProgress(u"[시작] " + nStockCode + u" 종목 리스트 취합");
 
     anBaseUrl = {};
     anBaseUrl['KOSPI']      = 'http://finance.naver.com/sise/dividend_list.nhn?sosok=KOSPI&fsq=20144&field=divd_rt&ordering=desc&page=';
     anBaseUrl['KOSDAQ']     = 'http://finance.naver.com/sise/dividend_list.nhn?sosok=KOSDAQ&fsq=20144&field=divd_rt&ordering=desc&page=';
 
-    nMaxPageRange = int(nMaxStockCount / 50);
-    if (nMaxStockCount % 50 > 0):
-        nMaxPageRange = nMaxPageRange + 1;
+    nMaxPageRange = int(nMaxStockCount / 50) + 1;
 
     for nPageIndex in range(nMaxPageRange):
         if (len(astStockName) >= nMaxStockCount):
@@ -115,6 +113,12 @@ def COMPANY_GetStockName(nStockCode, astStockName, nMaxStockCount):
 
             astStockType = astTr[nTrIndex].text.split("\n");
             nStockName = astStockType[1];
+
+            # 혹시라도 동일 종목이 존재하면 skip
+            nStockLen = len(astStockName);
+            if ((nStockLen > 0) and (astStockName[nStockLen - 1] == nStockName)):
+                continue;
+
             astStockName.append(nStockName);
             PrintProgress(u"[진행] 종목 리스트 취합: " + nStockName);
 
@@ -123,7 +127,7 @@ def COMPANY_GetStockName(nStockCode, astStockName, nMaxStockCount):
             if (len(astStockName) >= nMaxStockCount):
                 break;
 
-    PrintProgress(u"[완료] 종목 리스트 취합");
+    PrintProgress(u"[완료] " + nStockCode + u" 종목 리스트 취합");
 
 
 def get_days_to_json(soup):
@@ -536,7 +540,7 @@ def SetKospiXlsxData(nColOffset, nType, astStockInfor, astBaseInfor):
         if (bFirstPrice == 0):
             bFirstPrice = 1;
         else:
-            nCurRate = ((nCurPrice * 100) / nPrevPrice) - 100;
+            nCurRate = float((float(nCurPrice) * 100) / float(nPrevPrice)) - 100;
             gstSiseSheet.write(nRowOffset, nColOffset, nCurRate, stRateFormat);
 
         gstSiseSheet.write(nRowOffset, nColOffset + 1, nCurPrice, stSiseFormat);
@@ -582,7 +586,7 @@ def SetSiseXlsxData(nColOffset, astKospiInfor, stStockInfor):
             if (bFirstPrice == 0):
                 bFirstPrice = 1;
             else:
-                nCurRate = ((nCurPrice * 100) / nPrevPrice) - 100;
+                nCurRate = float((float(nCurPrice) * 100) / float(nPrevPrice)) - 100;
                 if (nCurRate > nImpossibleRate) or (nCurRate < (nImpossibleRate * -1)):
                     nCurRate = 0;
 
@@ -609,7 +613,10 @@ def PrintWinningRate(nColOffset, nTitle, nMaxDateCount):
         nDateRowOffset = nDateIndex + 2;
 
         stAccumulatedCell = xl_rowcol_to_cell(nDateRowOffset - 1, nColOffset);
-        stAvgStockRate = xl_rowcol_to_cell(nDateRowOffset, nColOffset - 1);
+        if (nTitle == u"KOSPI"):
+            stAvgStockRate = xl_rowcol_to_cell(nDateRowOffset, nColOffset - 1);
+        else:
+            stAvgStockRate = xl_rowcol_to_cell(nDateRowOffset, nColOffset - 2);
         stKospiRate = xl_rowcol_to_cell(nDateRowOffset, nColOffset - 3);
 
         stString = "=IFERROR(" + stAccumulatedCell + " + (" + stAvgStockRate + " - " + stKospiRate + "), \"\")";
@@ -802,7 +809,7 @@ def SISE_GetNonStockInfor(nStockCode, stStockInfor):   # IN (nStock: 종목코�
         stStock['Price']    = stDataInfor.values[nIndex][3];            # 종가: 'Close'
         stStockInfor.append(stStock);
 
-def SISE_GetStockInfor(nStockCode, nStockType, stStockInfor):   # IN (nStock: 종목코드), OUT (stStockInfor: 종목 정보)
+def SISE_GetErrorStockInfor(nStockCode, nStockType, stStockInfor):   # IN (nStock: 종목코드), OUT (stStockInfor: 종목 정보)
     stDataInfor = {};
 
     anReqCode               = {};
@@ -815,6 +822,31 @@ def SISE_GetStockInfor(nStockCode, nStockType, stStockInfor):   # IN (nStock: �
 
     for nIndex in range(stDataInfor.shape[0]):
         stStockInfor[stDataInfor.index[nIndex]._date_repr[2:]]   = stDataInfor.values[nIndex][3];
+
+def SISE_GetStockInfor(nStockCode, nStockType, stStockInfor):   # IN (nStock: 종목코드), OUT (stStockInfor: 종목 정보)
+    nCodeUrl = 'http://www.etomato.com/home/itemAnalysis/ItemPrice.aspx?item_code=';
+    nCodeUrl = nCodeUrl + nStockCode;
+    nResponse = gnOpener.open(nCodeUrl, timeout=60);
+    nPage = nResponse.read();
+    nSoup = BeautifulSoup(nPage);
+    tables = nSoup.findAll('table');
+
+    if ((len(tables) <= 13) or (len(tables[13].text.split(u'창출')) <= 1)):
+        SISE_GetErrorStockInfor(nStockCode, nStockType, stStockInfor);
+        return;
+
+    astTable = tables[20].contents;
+    nTableLen = len(astTable);
+    for nIndex in range(3, nTableLen):
+        nLen = len(astTable[nIndex]);
+        if (nLen <= 1):
+            continue;
+
+        astSplit = astTable[nIndex].text.split(u'\n');
+        stDate = astSplit[1][2:].replace(".", "-");
+        stStockInfor[stDate] = int(astSplit[2].replace(",", ""));
+        if (stDate == u"13-12-30"):
+            break;
 
 gastKospiInfor      = [];
 gastKosdaqInfor      = [];
@@ -840,11 +872,11 @@ gstDate = GetTodayString();
 SISE_GetKospiInfor(gastKospiInfor, gastKosdaqInfor);
 
 # 종목 정보 취합
-COMPANY_GetStockName('KOSPI', gastKospiStockName, gnMaxBaeDangStockCount);
-#COMPANY_GetStockName('KOSDAQ', gastKosdaqStockName, gnMaxBaeDangStockCount);
+COMPANY_GetStockName(u'KOSPI', gastKospiStockName, gnMaxBaeDangStockCount);
+COMPANY_GetStockName(u'KOSDAQ', gastKosdaqStockName, gnMaxBaeDangStockCount);
 COMPANY_GetStockCode(gastChangeStockNameCodeList);
-COMPANY_GetNameToCode('KOSPI', gastChangeStockNameCodeList, gastKospiStockName, gastStockNameCodeInfor);
-COMPANY_GetNameToCode('KOSDAQ', gastChangeStockNameCodeList, gastKosdaqStockName, gastStockNameCodeInfor);
+COMPANY_GetNameToCode(u'KOSPI', gastChangeStockNameCodeList, gastKospiStockName, gastStockNameCodeInfor);
+COMPANY_GetNameToCode(u'KOSDAQ', gastChangeStockNameCodeList, gastKosdaqStockName, gastStockNameCodeInfor);
 COMPANY_GetFinanceInfor(gastStockNameCodeInfor, gastStockInfor);
 
 # 종목 정보 출력
