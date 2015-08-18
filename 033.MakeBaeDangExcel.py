@@ -81,7 +81,7 @@ def COMPANY_GetNameToCode(nStockCode, astStockList, astStockName, astStockNameCo
 
 def GetUrlOpen(anUrl):
     stResponse = {};
-    
+
     while True:
         try:
             stResponse = gnOpener.open(anUrl, timeout=60);
@@ -89,9 +89,9 @@ def GetUrlOpen(anUrl):
             time.sleep(1);
         else:
             break;
-    
+
     return stResponse;
-    
+
 gastKospiStockName = [];
 gastKosdaqStockName = [];
 def COMPANY_GetStockName(nStockCode, astStockName, nMaxStockCount):
@@ -840,7 +840,6 @@ def SISE_GetErrorStockInfor(nStockCode, nStockType, stStockInfor):   # IN (nStoc
 def SISE_GetStockInfor(nStockCode, nStockType, stStockInfor):   # IN (nStock: 종목코드), OUT (stStockInfor: 종목 정보)
     nCodeUrl = 'http://www.etomato.com/home/itemAnalysis/ItemPrice.aspx?item_code=';
     nCodeUrl = nCodeUrl + nStockCode;
-    tables = {};
     nResponse = GetUrlOpen(nCodeUrl);
     nPage = nResponse.read();
     nSoup = BeautifulSoup(nPage);
