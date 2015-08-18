@@ -10,6 +10,7 @@ import urllib2;
 from bs4 import BeautifulSoup;
 import xlsxwriter;
 from xlsxwriter.utility import xl_rowcol_to_cell;
+import time;
 
 
 gnMaxBaeDangStockCount = 500;
@@ -78,6 +79,19 @@ def COMPANY_GetNameToCode(nStockCode, astStockList, astStockName, astStockNameCo
         nStockOffset = nStockOffset + 1;
     PrintProgress(u"[완료] " + nStockCode + u" 종목 코드 변환");
 
+def GetUrlOpen(anUrl):
+    stResponse = {};
+    
+    while True:
+        try:
+            stResponse = gnOpener.open(anUrl, timeout=60);
+        except:
+            time.sleep(1);
+        else:
+            break;
+    
+    return stResponse;
+    
 gastKospiStockName = [];
 gastKosdaqStockName = [];
 def COMPANY_GetStockName(nStockCode, astStockName, nMaxStockCount):
@@ -94,7 +108,7 @@ def COMPANY_GetStockName(nStockCode, astStockName, nMaxStockCount):
             break;
 
         anUrl = anBaseUrl[nStockCode] + str(nPageIndex + 1);
-        stResponse = gnOpener.open(anUrl, timeout=60);
+        stResponse = GetUrlOpen(anUrl);
         stPage = stResponse.read();
         stSoup = BeautifulSoup(stPage);
 
@@ -189,7 +203,7 @@ gastQuaterDataList = [];
 def COMPANY_GetFinance(ncode, astYearDataList, astQuaterDataList):
     nFinanceUrl = 'http://companyinfo.stock.naver.com/v1/company/cF1001.aspx?finGubun=MAIN&cmp_cd=';
     nUrl = nFinanceUrl + ncode;
-    nResponse = gnOpener.open(nUrl, timeout=60);
+    nResponse = GetUrlOpen(nUrl);
     nPage = nResponse.read();
     nSoup = BeautifulSoup(nPage);
 
@@ -283,7 +297,7 @@ def COMPANY_GetStockFinanceInfor(nType, nName, nCode, astStockInfor):
     stStockInfor = {};
     nCodeUrl = 'http://companyinfo.stock.naver.com/v1/company/c1010001.aspx?cmp_cd=';
     nCodeUrl = nCodeUrl + nCode;
-    nResponse = gnOpener.open(nCodeUrl, timeout=60);
+    nResponse = GetUrlOpen(nCodeUrl);
     nPage = nResponse.read();
     nSoup = BeautifulSoup(nPage);
     tables = nSoup.findAll('table');
@@ -826,11 +840,13 @@ def SISE_GetErrorStockInfor(nStockCode, nStockType, stStockInfor):   # IN (nStoc
 def SISE_GetStockInfor(nStockCode, nStockType, stStockInfor):   # IN (nStock: 종목코드), OUT (stStockInfor: 종목 정보)
     nCodeUrl = 'http://www.etomato.com/home/itemAnalysis/ItemPrice.aspx?item_code=';
     nCodeUrl = nCodeUrl + nStockCode;
-    nResponse = gnOpener.open(nCodeUrl, timeout=60);
+    tables = {};
+    nResponse = GetUrlOpen(nCodeUrl);
     nPage = nResponse.read();
     nSoup = BeautifulSoup(nPage);
     tables = nSoup.findAll('table');
 
+    # 해당 Page로부터 시세 정보 확인 불가
     if ((len(tables) <= 13) or (len(tables[13].text.split(u'창출')) <= 1)):
         SISE_GetErrorStockInfor(nStockCode, nStockType, stStockInfor);
         return;
@@ -891,7 +907,7 @@ gstGraphSheet       = gstWorkBook.add_worksheet(gstGraphSheetName);
 
 COMPANY_WriteExcelFile(gastKospiInfor, gastKosdaqInfor, gastStockInfor);
 
-gstFnSheet.autofilter('A2:JG2');
+gstFnSheet.autofilter('A2:JK2');
 gstFnSheet.freeze_panes('C3');
 gstSiseSheet.freeze_panes('F3');
 gstGraphSheet.freeze_panes('G3');
