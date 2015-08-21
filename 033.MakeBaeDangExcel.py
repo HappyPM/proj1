@@ -14,7 +14,7 @@ import time;
 
 
 gnMaxBaeDangStockCount = 500;
-gnMaxGraphStockCount = 30;
+gnMaxGraphStockCount = 20;
 gbPrintProgress = 1;
 
 
@@ -124,13 +124,18 @@ def COMPANY_GetStockName(nStockCode, astStockName, nMaxStockCount):
             nStrLen = len(astTr[nTrIndex].text);
             if (nStrLen <= nSkipStrLen):
                 continue;
-
+                
             astStockType = astTr[nTrIndex].text.split("\n");
             nStockName = astStockType[1];
 
+            if (len(astStockName) >= 495):
+                anUrl = anUrl;
+
             # 혹시라도 동일 종목이 존재하면 skip
             nStockLen = len(astStockName);
-            if ((nStockLen > 0) and (astStockName[nStockLen - 1] == nStockName)):
+            if (len(nStockName) == 0):
+                continue;
+            elif ((nStockLen > 0) and (astStockName[nStockLen - 1] == nStockName)):
                 continue;
 
             astStockName.append(nStockName);
@@ -176,8 +181,18 @@ def set_year_and_quater(days, data, year_data_list, quater_data_list) :
             
             qt_dat1 = qt_dat[jj]
             jj = jj + 1
+
+            nYearIndicator = 0;
+            nQuaterIndicator = 0;
+            nMultipleIndicator = 1;
     
             ii = 0            
+
+            astYearIndicatorData = [];
+            astQuaterIndicatorData = [];
+            stYearAppendData = {};
+            stQuaterAppendData = {};
+            
             for yy_dat2 in yy_dat1[1:]:
                 #print len(qt_dat1[ii])
                 qt_dat2 = qt_dat1[ii]                
@@ -196,7 +211,31 @@ def set_year_and_quater(days, data, year_data_list, quater_data_list) :
                 #print quater_data
                 quater_data_list.append(quater_data);
                 
+                if (ii > 0):
+                    nIndicator = nMultipleIndicator;
+                    for stYearIndicatorData in astYearIndicatorData:
+                        if ((year_data["item_value"] != '') and (stYearIndicatorData["item_value"] != '') and (float(year_data["item_value"]) > 0) and (float(year_data["item_value"]) >= float(stYearIndicatorData["item_value"]))):
+                            nYearIndicator = nYearIndicator + nIndicator;
+                        nIndicator = nIndicator * 2;
+                    nIndicator = nMultipleIndicator;
+                    for stQuaterIndicatorData in astQuaterIndicatorData:
+                        if ((quater_data["item_value"] != '') and (stQuaterIndicatorData["item_value"] != '') and (float(quater_data["item_value"]) > 0) and (float(quater_data["item_value"]) >= float(stQuaterIndicatorData["item_value"]))):
+                            nQuaterIndicator = nQuaterIndicator + nIndicator;
+                        nIndicator = nIndicator * 2;
+                        
+                    nMultipleIndicator = nMultipleIndicator * 10;
+                astYearIndicatorData.append(year_data);
+                astQuaterIndicatorData.append(quater_data);
+                
                 ii = ii + 1;
+            stYearAppendData["day"] = u"지표/";
+            stYearAppendData["item_name"] = dnam;
+            stYearAppendData["item_value"] = unicode(nYearIndicator);
+            year_data_list.append(stYearAppendData);
+            stQuaterAppendData["day"] = u"/지표";
+            stQuaterAppendData["item_name"] = dnam;
+            stQuaterAppendData["item_value"] = unicode(nQuaterIndicator);
+            quater_data_list.append(stQuaterAppendData);
 
 gastYearDataList = [];
 gastQuaterDataList = [];
@@ -332,6 +371,7 @@ def SetFnXlsxTitle(astStockInfor):
     nXlsxQuarter= 0;
 
     stTitleFormat = gstWorkBook.add_format({'bold': True, 'font_color': 'blue', 'align':'center'});
+    stIndicatorFormat = gstWorkBook.add_format({'bold': True, 'font_color': 'brown', 'align':'center'});
     stRedTitleFormat = gstWorkBook.add_format({'bold': True, 'font_color': 'red'});
     stGreenTitleFormat = gstWorkBook.add_format({'bold': True, 'font_color': 'green'});
     stPurpleFormat = gstWorkBook.add_format({'bold': True, 'font_color': 'purple'});
@@ -390,7 +430,11 @@ def SetFnXlsxTitle(astStockInfor):
         if (nXlsxYear == stThisYear):
             gstFnSheet.write(0, nColOffset, u"연간 " + stItemName, stRedTitleFormat);
 
-        gstFnSheet.write(nRowOffset, nColOffset, stThisYear, stTitleFormat);
+        if (stThisYear == u'지표'):
+            gstFnSheet.write(nRowOffset, nColOffset, stThisYear, stIndicatorFormat);
+        else:
+            gstFnSheet.write(nRowOffset, nColOffset, stThisYear, stTitleFormat);
+
         nColOffset = nColOffset + 1;
 
     nLength = len(stStockInfor['QuaterDataList']);
@@ -404,7 +448,10 @@ def SetFnXlsxTitle(astStockInfor):
         if (nXlsxQuarter == stThisQuarter):
             gstFnSheet.write(0, nColOffset, u"분기 " + stItemName, stGreenTitleFormat);
 
-        gstFnSheet.write(nRowOffset, nColOffset, stThisQuarter, stTitleFormat);
+        if (stThisQuarter == u'지표'):
+            gstFnSheet.write(nRowOffset, nColOffset, stThisQuarter, stIndicatorFormat);
+        else:
+            gstFnSheet.write(nRowOffset, nColOffset, stThisQuarter, stTitleFormat);
         nColOffset = nColOffset + 1;
 
 def SetSiseXlsxTitle(astStockInfor):
@@ -442,7 +489,10 @@ def SetFnXlsxData(nRowOffset, astStockInfor, nStockIndex):
     stPurpleFormat = gstWorkBook.add_format({'font_color': 'purple'});
     stOrangeFormat = gstWorkBook.add_format({'font_color': 'orange'});
     stGrayFormat = gstWorkBook.add_format({'font_color': 'gray', 'underline':  1});
-
+    stIndicator1Format = gstWorkBook.add_format({'bg_color': '#FFFF00'});
+    stIndicator2Format = gstWorkBook.add_format({'bg_color': '#FFFFDF'});
+    stIndicator3Format = gstWorkBook.add_format({'bg_color': '#FFFFEF'});
+    
     # 종목명
     if (stStockInfor['Type'] == 'KOSPI'):
         gstFnSheet.write(nRowOffset, nColOffset, stStockInfor['Name'], stPurpleFormat);
@@ -506,14 +556,34 @@ def SetFnXlsxData(nRowOffset, astStockInfor, nStockIndex):
     for nYearIndex in range(nLength):
         stYearDataList = stStockInfor['YearDataList'][nYearIndex];
         if (stYearDataList["item_value"] != u''):
-            gstFnSheet.write(nRowOffset, nColOffset, float(stYearDataList["item_value"]));
+            stDay = GetSplitTitle(stYearDataList["day"]);
+            stThisYear = stDay.split('/')[0];        
+            if ((stThisYear == u'지표') and (float(stYearDataList["item_value"]) >= 700)):
+                if (float(stYearDataList["item_value"]) >= 730):
+                    gstFnSheet.write(nRowOffset, nColOffset, float(stYearDataList["item_value"]), stIndicator1Format);
+                elif (float(stYearDataList["item_value"]) >= 710):
+                    gstFnSheet.write(nRowOffset, nColOffset, float(stYearDataList["item_value"]), stIndicator2Format);
+                else:
+                    gstFnSheet.write(nRowOffset, nColOffset, float(stYearDataList["item_value"]), stIndicator3Format);
+            else:
+                gstFnSheet.write(nRowOffset, nColOffset, float(stYearDataList["item_value"]));
         nColOffset = nColOffset + 1;
 
     nLength = len(stStockInfor['QuaterDataList']);
     for nQuaterIndex in range(nLength):
         stQuaterDataList = stStockInfor['QuaterDataList'][nQuaterIndex];
         if (stQuaterDataList["item_value"] != u''):
-            gstFnSheet.write(nRowOffset, nColOffset, float(stQuaterDataList["item_value"]));
+            stDay = GetSplitTitle(stQuaterDataList["day"]);
+            stThisQuarter = stDay.split('/')[1];
+            if ((stThisQuarter == u'지표') and (float(stQuaterDataList["item_value"]) >= 700)):
+                if (float(stQuaterDataList["item_value"]) >= 730):
+                    gstFnSheet.write(nRowOffset, nColOffset, float(stQuaterDataList["item_value"]), stIndicator1Format);
+                elif (float(stQuaterDataList["item_value"]) >= 710):
+                    gstFnSheet.write(nRowOffset, nColOffset, float(stQuaterDataList["item_value"]), stIndicator2Format);
+                else:
+                    gstFnSheet.write(nRowOffset, nColOffset, float(stQuaterDataList["item_value"]), stIndicator3Format);
+            else:
+                gstFnSheet.write(nRowOffset, nColOffset, float(stQuaterDataList["item_value"]));
         nColOffset = nColOffset + 1;
 
 def SetKospiXlsxData(nColOffset, nType, astStockInfor, astBaseInfor):
@@ -882,7 +952,7 @@ def PrintProgress(stString):
 ############# main #############
 
 gstDate = GetTodayString();
-
+        
 # Kospi / Kosdaq 정보 취합
 SISE_GetKospiInfor(gastKospiInfor, gastKosdaqInfor);
 
@@ -906,7 +976,7 @@ gstGraphSheet       = gstWorkBook.add_worksheet(gstGraphSheetName);
 
 COMPANY_WriteExcelFile(gastKospiInfor, gastKosdaqInfor, gastStockInfor);
 
-gstFnSheet.autofilter('A2:JK2');
+gstFnSheet.autofilter('A2:LW2');
 gstFnSheet.freeze_panes('C3');
 gstSiseSheet.freeze_panes('F3');
 gstGraphSheet.freeze_panes('G3');
