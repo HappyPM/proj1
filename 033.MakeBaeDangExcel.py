@@ -1,4 +1,4 @@
-#-*- coding: utf-8 -*-
+﻿#-*- coding: utf-8 -*-
 import requests;
 import pandas as pd;
 import pandas.io.data as web;
@@ -24,7 +24,7 @@ gnOpener.addheaders = [('User-agent', 'Mozilla/5.0')]                 # header d
 gnGetBaeDangStockCount = int(gnMaxBaeDangStockCount + (gnMaxBaeDangStockCount * 0.2) + 1);
 if (gnGetBaeDangStockCount <= 50):
     gnGetBaeDangStockCount = 50;
-    
+
 def GetTodayString():
     stNow = datetime.datetime.now();
 
@@ -128,7 +128,7 @@ def COMPANY_GetStockName(nStockCode, astStockName, nMaxStockCount):
             nStrLen = len(astTr[nTrIndex].text);
             if (nStrLen <= nSkipStrLen):
                 continue;
-                
+
             astStockType = astTr[nTrIndex].text.split("\n");
             nStockName = astStockType[1];
 
@@ -189,14 +189,14 @@ def set_year_and_quater(days, data, year_data_list, quater_data_list) :
             nYearIndicator = 0;
             nQuaterIndicator = 0;
             nMultipleIndicator = 1;
-    
+
             ii = 0            
 
             astYearIndicatorData = [];
             astQuaterIndicatorData = [];
             stYearAppendData = {};
             stQuaterAppendData = {};
-            
+
             for yy_dat2 in yy_dat1[1:]:
                 #print len(qt_dat1[ii])
                 qt_dat2 = qt_dat1[ii]                
@@ -214,7 +214,7 @@ def set_year_and_quater(days, data, year_data_list, quater_data_list) :
                 
                 #print quater_data
                 quater_data_list.append(quater_data);
-                
+
                 if (ii > 0):
                     nIndicator = nMultipleIndicator;
                     for stYearIndicatorData in astYearIndicatorData:
@@ -230,7 +230,7 @@ def set_year_and_quater(days, data, year_data_list, quater_data_list) :
                     nMultipleIndicator = nMultipleIndicator * 10;
                 astYearIndicatorData.append(year_data);
                 astQuaterIndicatorData.append(quater_data);
-                
+
                 ii = ii + 1;
             stYearAppendData["day"] = u"지표/";
             stYearAppendData["item_name"] = dnam;
@@ -283,7 +283,7 @@ def COMPANY_SetStockInfor(stStockInfor, tables, nType, nName, nCode):
     stStockInfor['WebCode'] = stSplit0[nSplit0Len - 1];
     if (stStockInfor['WebCode'] != nCode):
         return 0;
-        
+
 #    stSplit2 = astSplit[2].split(' : ');
 #    stStockInfor['종목Type'] = stSplit2[0];
 
@@ -357,7 +357,7 @@ def COMPANY_SetStockInfor(stStockInfor, tables, nType, nName, nCode):
     stStockInfor['시세'] = {};
     bRet = SISE_GetStockInfor(nCode, nType, stStockInfor['시세']);
     return bRet;
-    
+
 def COMPANY_GetStockFinanceInfor(nType, nName, nCode, astStockInfor):
     stStockInfor = {};
     nCodeUrl = 'http://companyinfo.stock.naver.com/v1/company/c1010001.aspx?cmp_cd=';
@@ -371,7 +371,7 @@ def COMPANY_GetStockFinanceInfor(nType, nName, nCode, astStockInfor):
         return 0;
 
     bRet = COMPANY_SetStockInfor(stStockInfor, tables, nType, nName, nCode);
-    
+
     if (bRet > 0):
         astStockInfor.append(stStockInfor);
 
@@ -382,7 +382,7 @@ def COMPANY_GetFinanceInfor(astStockNameCode, astStockInfor):
     nMaxGettingCount = gnMaxBaeDangStockCount * 2;
     nKospiCount = 0;
     nKosdaqCount = 0;
-    
+
     nStockLen = len(astStockNameCode);
     PrintProgress(u"[시작] 종목 정보 취합: " + str(0) + " / " + str(nMaxGettingCount));
 
@@ -391,7 +391,7 @@ def COMPANY_GetFinanceInfor(astStockNameCode, astStockInfor):
             continue;
         elif ((astStockNameCode[nStockIndex]['Type'] == u'KOSDAQ') and (nKosdaqCount >= gnMaxBaeDangStockCount)):
             continue;
-        
+
         bRet = COMPANY_GetStockFinanceInfor(astStockNameCode[nStockIndex]['Type'],
                                         astStockNameCode[nStockIndex]['Name'],
                                         astStockNameCode[nStockIndex]['Code'],
@@ -404,9 +404,9 @@ def COMPANY_GetFinanceInfor(astStockNameCode, astStockInfor):
             nKospiCount = nKospiCount + 1;
         elif (astStockNameCode[nStockIndex]['Type'] == u'KOSDAQ'):
             nKosdaqCount = nKosdaqCount + 1;
-            
+
         PrintProgress(u"[진행] 종목 정보 취합: " + str(nKospiCount + nKosdaqCount) + " / " + str(nMaxGettingCount) + " - " + astStockNameCode[nStockIndex]['Name']);
-            
+
     PrintProgress(u"[완료] 종목 정보 취합: " + str(nStockLen) + " / " + str(nStockLen));
 
 gstAutoFilterStartCell  = 'A2';
@@ -547,7 +547,7 @@ def SetFnXlsxData(nRowOffset, astStockInfor, nStockIndex):
     stIndicator1Format = gstWorkBook.add_format({'bg_color': '#FFFF00'});
     stIndicator2Format = gstWorkBook.add_format({'bg_color': '#FFFFDF'});
     stIndicator3Format = gstWorkBook.add_format({'bg_color': '#FFFFEF'});
-    
+
     # 종목명
     if (stStockInfor['Type'] == 'KOSPI'):
         gstFnSheet.write(nRowOffset, nColOffset, stStockInfor['Name'], stPurpleFormat);
@@ -690,13 +690,13 @@ def SetKospiXlsxData(nColOffset, nType, astStockInfor, astBaseInfor):
         if (bFound == 1):
             stStockInfor = astStockInfor[nDayIndex];
             nCurPrice = stStockInfor['Price'];
-    
+
             if (bFirstPrice == 0):
                 bFirstPrice = 1;
             else:
                 nCurRate = float((float(nCurPrice) * 100) / float(nPrevPrice)) - 100;
                 gstSiseSheet.write(nRowOffset, nColOffset, nCurRate, stRateFormat);
-    
+
             gstSiseSheet.write(nRowOffset, nColOffset + 1, nCurPrice, stSiseFormat);
 
             nPrevPrice = nCurPrice;
@@ -965,7 +965,7 @@ def SISE_GetNonStockInfor(nStockCode, stStockInfor):   # IN (nStock: 종목코�
             time.sleep(1);
         else:
             break;
-    
+
     stDataInfor             = pd.read_csv(StringIO(stRequest.content), index_col='Date', parse_dates={'Date'});
 
     for nIndex in range(stDataInfor.shape[0]):
@@ -999,8 +999,6 @@ def SISE_GetStockInfor(nStockCode, nStockType, stStockInfor):   # IN (nStock: �
     # 해당 Page로부터 시세 정보 확인 불가
     if ((len(tables) <= 13) or (len(tables[13].text.split(u'창출')) <= 1)):
         return 0;
-#        SISE_GetErrorStockInfor(nStockCode, nStockType, stStockInfor);
-#        return;
 
     astTable = tables[20].contents;
     nTableLen = len(astTable);
@@ -1035,7 +1033,7 @@ def PrintProgress(stString):
 ############# main #############
 
 gstDate = GetTodayString();
-        
+
 # Kospi / Kosdaq 정보 취합
 SISE_GetKospiInfor(gastKospiInfor, gastKosdaqInfor);
 
