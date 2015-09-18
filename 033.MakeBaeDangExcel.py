@@ -1,4 +1,4 @@
-﻿#-*- coding: utf-8 -*-
+#-*- coding: utf-8 -*-
 import requests;
 import pandas as pd;
 import pandas.io.data as web;
@@ -438,6 +438,9 @@ def SetFnXlsxTitle(astStockInfor):
     gstFnSheet.write(0, nColOffset, u"종목명", stPurpleFormat);
     nColOffset = nColOffset + 1;
 
+    gstFnSheet.write(0, nColOffset, u"종목매핑", stPurpleFormat);
+    nColOffset = nColOffset + 1;
+
 #    gstFnSheet.write(0, nColOffset, u"종목Type", stNavyFormat);
 #    nColOffset = nColOffset + 1;
     gstFnSheet.write(0, nColOffset, u"코드번호", stGrayFormat);
@@ -534,6 +537,20 @@ def SetSiseXlsxTitle(astStockInfor):
         gstSiseSheet.write(nRowOffset, nColOffset, stStockInfor['Date'], stPurpleFormat);
         nRowOffset = nRowOffset + 1;
 
+def SetFnXlsxMapping(nRowOffset, nColOffset):
+    nStartRow = 3;
+    nEndRow = gnMaxBaeDangStockCount + nStartRow;
+    stStockChoiceLocation = u'A';
+    stStockNameLocation = u'B';
+    nTargetRowOffset = nRowOffset + 1;
+    
+    stString = u'';
+    stString = stString + u'=IF(ISNUMBER(' + stStockChoiceLocation + str(nTargetRowOffset) + u'),';
+    stString = stString + u'count(' + stStockChoiceLocation + str(nStartRow) + u':' + stStockChoiceLocation + str(nTargetRowOffset) + u'),';
+    stString = stString + u'IFERROR(MATCH(' + stStockNameLocation + str(nTargetRowOffset) + u',' + stStockChoiceLocation + str(nStartRow) + u':' + stStockChoiceLocation + str(nEndRow) + u',0), \"\"))';
+    # =IF(ISNUMBER(A4),COUNT(A3:A4),IFERROR(MATCH(B4,A3:A20,0), ""))
+    gstFnSheet.write(nRowOffset, nColOffset, stString);
+
 def SetFnXlsxData(nRowOffset, astStockInfor, nStockIndex):
     stStockInfor = astStockInfor[nStockIndex];
     nColOffset = 1;
@@ -553,6 +570,10 @@ def SetFnXlsxData(nRowOffset, astStockInfor, nStockIndex):
         gstFnSheet.write(nRowOffset, nColOffset, stStockInfor['Name'], stPurpleFormat);
     else:
         gstFnSheet.write(nRowOffset, nColOffset, stStockInfor['Name'], stOrangeFormat);
+    nColOffset = nColOffset + 1;
+
+    # 종목매핑
+    SetFnXlsxMapping(nRowOffset, nColOffset);
     nColOffset = nColOffset + 1;
 
     # 코드번호
@@ -789,6 +810,9 @@ def SetGraphXlsxData(nMaxDateCount, nMaxStockCount):
     nRowOffset = 0;
     nColOffset = 0;
 
+    nKospiOffset = 2;
+    nKosdaqOffset = 4;
+    
     nDateColOffset = 0;
     nKospiColOffset = 1;
     nKosdaqColOffset = 2;
@@ -866,7 +890,7 @@ def SetGraphXlsxData(nMaxDateCount, nMaxStockCount):
             stSiseRowOffset = str(nRowOffset + 1);
 
             stString = "=IFERROR(INDIRECT(ADDRESS(" + stSiseRowOffset + ", INDIRECT(ADDRESS(2 + MATCH(" + stStockColOffset + ", ";
-            stString += gstFnSheetName + "!$A$" + stStartFnRowOffset + ":$A$" + stEndFnRowOffset + ", 0), 4, 4, 5, \"" + gstFnSheetName + "\")), ";
+            stString += gstFnSheetName + "!$C$" + stStartFnRowOffset + ":$C$" + stEndFnRowOffset + ", 0), 5, 4, 5, \"" + gstFnSheetName + "\")), ";
             stString += "4, 5, \"" + gstSiseSheetName + "\")), \"\")";
 
             if (nRowOffset >= 2):
@@ -875,6 +899,7 @@ def SetGraphXlsxData(nMaxDateCount, nMaxStockCount):
                 gstGraphSheet.write(nRowOffset, nStockColOffset + nStockIndex, stString);
 
     # 차트 출력
+    # 누적 승리율
     stChart = gstWorkBook.add_chart({'type':'line'});
     stGraphCell = xl_rowcol_to_cell(nStartFnRowOffset - 1, nStockColOffset);
 
@@ -897,6 +922,32 @@ def SetGraphXlsxData(nMaxDateCount, nMaxStockCount):
 
     stChart.add_series({'name':u"KOSPI",'categories':stDate, 'values':stKospiData});
     stChart.add_series({'name':u"KOSDAQ",'categories':stDate, 'values':stKosdaqData});
+
+    stChart.set_size({'width':720, 'height':504});
+    gstGraphSheet.insert_chart(stGraphCell, stChart);
+
+
+    # KOSPI / KOSDAQ 지수
+    stChart = gstWorkBook.add_chart({'type':'line'});
+    stGraphCell = xl_rowcol_to_cell(nStartFnRowOffset - 1 + 25, nStockColOffset);
+
+    stStartTransCell = xl_rowcol_to_cell(2, nKospiOffset);
+    stEndTransCell = xl_rowcol_to_cell(nMaxRowOffset - 1, nKospiOffset);
+    stKospiSise = '=' + gstSiseSheetName + '!' + stStartTransCell + ":" + stEndTransCell;
+
+    stStartTransCell = xl_rowcol_to_cell(2, nKosdaqOffset);
+    stEndTransCell = xl_rowcol_to_cell(nMaxRowOffset - 1, nKosdaqOffset);
+    stKosdaqSise = '=' + gstSiseSheetName + '!' + stStartTransCell + ":" + stEndTransCell;
+
+    stTitle = xl_rowcol_to_cell(1, nKospiVsColOffset);
+    stChart.set_title({'name':u"KOSPI / KOSDAQ 지수"});
+    stChart.set_x_axis({'name':u'날짜'});
+    stChart.set_y_axis({'name':u'KOSPI지수'});
+    stChart.set_y2_axis({'name':u'KOSDAQ지수'});
+
+    stChart.add_series({'name':u"KOSPI",'categories':stDate, 'values':stKospiSise});
+    stChart.add_series({'name':u"KOSDAQ",'categories':stDate, 'values':stKosdaqSise, 'y2_axis':1});
+
     stChart.set_size({'width':720, 'height':504});
     gstGraphSheet.insert_chart(stGraphCell, stChart);
 
@@ -1059,6 +1110,7 @@ gstAutoFilterEndCell = COMPANY_WriteExcelFile(gastKospiInfor, gastKosdaqInfor, g
 
 gstFnSheet.autofilter(gstAutoFilterStartCell + ':' + gstAutoFilterEndCell);
 gstFnSheet.freeze_panes('C3');
+gstFnSheet.set_column('C:C', None, None, {'hidden': 1});
 gstSiseSheet.freeze_panes('F3');
 gstGraphSheet.freeze_panes('G3');
 
