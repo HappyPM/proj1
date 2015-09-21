@@ -1,4 +1,4 @@
-#-*- coding: utf-8 -*-
+﻿#-*- coding: utf-8 -*-
 import requests;
 import pandas as pd;
 import pandas.io.data as web;
@@ -25,19 +25,27 @@ gnGetBaeDangStockCount = int(gnMaxBaeDangStockCount + (gnMaxBaeDangStockCount * 
 if (gnGetBaeDangStockCount <= 50):
     gnGetBaeDangStockCount = 50;
 
-def GetTodayString():
+ganYear = [1];
+ganMonth = [1];
+ganDay = [1];
+def GetTodayString(anYear, anMonth, anDay):
     stNow = datetime.datetime.now();
 
     if (stNow.year > 2015):
         exit();
 
     stDate = str(stNow.year)[2:];
+    anYear[0] = stNow.year;
+
     if (stNow.month < 10):
         stDate = stDate + '0';
     stDate = stDate + str(stNow.month);
+    anMonth[0] = stNow.month;
+
     if (stNow.day < 10):
         stDate = stDate + '0';
     stDate = stDate + str(stNow.day);
+    anDay[0] = stNow.day;
 
     return stDate;
 
@@ -510,7 +518,7 @@ def SetFnXlsxTitle(astStockInfor):
         nColOffset = nColOffset + 1;
 
     stAutoFilterCell = xl_rowcol_to_cell(1, nColOffset - 1);
-    return stAutoFilterCell;    
+    return stAutoFilterCell;
 
 def SetSiseXlsxTitle(astStockInfor):
     nXlsxColumnOffset = 0;
@@ -543,12 +551,11 @@ def SetFnXlsxMapping(nRowOffset, nColOffset):
     stStockChoiceLocation = u'A';
     stStockNameLocation = u'B';
     nTargetRowOffset = nRowOffset + 1;
-    
+
     stString = u'';
     stString = stString + u'=IF(ISNUMBER(' + stStockChoiceLocation + str(nTargetRowOffset) + u'),';
     stString = stString + u'count(' + stStockChoiceLocation + str(nStartRow) + u':' + stStockChoiceLocation + str(nTargetRowOffset) + u'),';
     stString = stString + u'IFERROR(MATCH(' + stStockNameLocation + str(nTargetRowOffset) + u',' + stStockChoiceLocation + str(nStartRow) + u':' + stStockChoiceLocation + str(nEndRow) + u',0), \"\"))';
-    # =IF(ISNUMBER(A4),COUNT(A3:A4),IFERROR(MATCH(B4,A3:A20,0), ""))
     gstFnSheet.write(nRowOffset, nColOffset, stString);
 
 def SetFnXlsxData(nRowOffset, astStockInfor, nStockIndex):
@@ -768,7 +775,7 @@ def SetSiseXlsxData(nColOffset, astKospiInfor, stStockInfor):
 
                 gstSiseSheet.write(nRowOffset, nColOffset, nCurRate, stRateFormat);
 
-            gstSiseSheet.write(nRowOffset, nColOffset + 1, nCurPrice);
+            gstSiseSheet.write(nRowOffset, nColOffset + 1, float(nCurPrice));
 
             nPrevPrice = nCurPrice;
         nRowOffset = nRowOffset + 1;
@@ -812,7 +819,7 @@ def SetGraphXlsxData(nMaxDateCount, nMaxStockCount):
 
     nKospiOffset = 2;
     nKosdaqOffset = 4;
-    
+
     nDateColOffset = 0;
     nKospiColOffset = 1;
     nKosdaqColOffset = 2;
@@ -948,7 +955,7 @@ def SetGraphXlsxData(nMaxDateCount, nMaxStockCount):
     stChart.add_series({'name':u"KOSPI",'categories':stDate, 'values':stKospiSise});
     stChart.add_series({'name':u"KOSDAQ",'categories':stDate, 'values':stKosdaqSise, 'y2_axis':1});
 
-    stChart.set_size({'width':720, 'height':504});
+    stChart.set_size({'width':770, 'height':504});
     gstGraphSheet.insert_chart(stGraphCell, stChart);
 
 def COMPANY_WriteExcelFile(astKospiInfor, astKosdaqInfor, astStockInfor):
@@ -990,39 +997,29 @@ def COMPANY_WriteExcelFile(astKospiInfor, astKosdaqInfor, astStockInfor):
     PrintProgress(u"[완료] 엑셀 취합");
     return stAutoFilter;
 
-# Date & 가격을 얻는 함수 (코스피 / 코스닥 / 일반종목)
-# 코스피 or 코스닥 or 일반 종목 선택
-#gnStockCode             = 'KOSPI';      # '1997-07-01' ~
-#gnStockCode             = 'KOSDAQ';     # '2013-03-04' ~
-#gnStockCode             = '014530';     # '2000-0101' ~
-gastStockInfor          = [];
 def SISE_GetNonStockInfor(nStockCode, stStockInfor):   # IN (nStock: 종목코드), OUT (stStockInfor: 종목 정보)
+    anUrl = "http://vip.mk.co.kr/newSt/rate/kospikosdaq_2.php?sty=2010&stm=5&std=1";
     stDataInfor = {};
 
     anReqCode               = {};
-    anReqCode['KOSPI']      = '^KS11';
-    anReqCode['KOSDAQ']     = '^KQ11';
+    anReqCode['KOSPI']      = "&stCode=KPS001";
+    anReqCode['KOSDAQ']     = "&stCode=KDS001";
 
-    # nUrl                    = 'http://real-chart.finance.yahoo.com/table.csv?s=' + anReqCode[nStockCode] + '&a=0&b=1&c=1900';
+    anUrl                   = anUrl + "&eny=" + str(ganYear[0]) + "&enm=" + str(ganMonth[0]) + "&end=" + str(ganDay[0]);
+    anUrl                   = anUrl + anReqCode[nStockCode];
+    stResponse              = GetUrlOpen(anUrl);
+    stPage                  = stResponse.read();
+    stSoup                  = BeautifulSoup(stPage);
+    astTables               = stSoup.findAll('table')[7].contents;
 
-    # Month = a + 1 / Day = b / Year = c
-    # 2013-04-05
-    nUrl                    = 'http://real-chart.finance.yahoo.com/table.csv?s=' + anReqCode[nStockCode] + '&a=6&b=31&c=2013';
-    stRequest               = {};
-    while True:
-        try:
-            stRequest               = requests.get(nUrl);
-        except:
-            time.sleep(1);
-        else:
-            break;
-
-    stDataInfor             = pd.read_csv(StringIO(stRequest.content), index_col='Date', parse_dates={'Date'});
-
-    for nIndex in range(stDataInfor.shape[0]):
+    nTableLen = len(astTables);
+    for nIndex in range(5, nTableLen, 2):
         stStock             = {};
-        stStock['Date']     = stDataInfor.index[nIndex]._date_repr[2:]; # 날짜
-        stStock['Price']    = stDataInfor.values[nIndex][3];            # 종가: 'Close'
+
+        astSplit = astTables[nIndex].text.split(u'\n');
+
+        stStock['Date']     = astSplit[1].replace(".", "-");
+        stStock['Price']    = float(astSplit[2].replace(",", ""));
         stStockInfor.append(stStock);
 
 def SISE_GetErrorStockInfor(nStockCode, nStockType, stStockInfor):   # IN (nStock: 종목코드), OUT (stStockInfor: 종목 정보)
@@ -1061,7 +1058,7 @@ def SISE_GetStockInfor(nStockCode, nStockType, stStockInfor):   # IN (nStock: �
         astSplit = astTable[nIndex].text.split(u'\n');
         stDate = astSplit[1][2:].replace(".", "-");
         stStockInfor[stDate] = int(astSplit[2].replace(",", ""));
-        if (stDate == u"13-07-31"):
+        if (stDate == u"10-04-30"):
             break;
     return 1;
 
@@ -1083,7 +1080,7 @@ def PrintProgress(stString):
 
 ############# main #############
 
-gstDate = GetTodayString();
+gstDate = GetTodayString(ganYear, ganMonth, ganDay);
 
 # Kospi / Kosdaq 정보 취합
 SISE_GetKospiInfor(gastKospiInfor, gastKosdaqInfor);
