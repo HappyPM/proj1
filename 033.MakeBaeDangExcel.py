@@ -1,4 +1,4 @@
-﻿#-*- coding: utf-8 -*-
+#-*- coding: utf-8 -*-
 import requests;
 import pandas as pd;
 import pandas.io.data as web;
@@ -722,7 +722,10 @@ def SetKospiXlsxData(nColOffset, nType, astStockInfor, astBaseInfor):
             if (bFirstPrice == 0):
                 bFirstPrice = 1;
             else:
-                nCurRate = float((float(nCurPrice) * 100) / float(nPrevPrice)) - 100;
+                nCurRate = 0;
+                if (float(nPrevPrice) > 0):
+                    nCurRate = float((float(nCurPrice) * 100) / float(nPrevPrice)) - 100;
+
                 gstSiseSheet.write(nRowOffset, nColOffset, nCurRate, stRateFormat);
 
             gstSiseSheet.write(nRowOffset, nColOffset + 1, nCurPrice, stSiseFormat);
