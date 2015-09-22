@@ -772,7 +772,9 @@ def SetSiseXlsxData(nColOffset, astKospiInfor, stStockInfor):
             if (bFirstPrice == 0):
                 bFirstPrice = 1;
             else:
-                nCurRate = float((float(nCurPrice) * 100) / float(nPrevPrice)) - 100;
+                nCurRate = 0;
+                if (float(nPrevPrice) > 0):
+                    nCurRate = float((float(nCurPrice) * 100) / float(nPrevPrice)) - 100;
                 if (nCurRate > nImpossibleRate) or (nCurRate < (nImpossibleRate * -1)):
                     nCurRate = 0;
 
