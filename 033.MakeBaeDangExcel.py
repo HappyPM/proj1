@@ -494,9 +494,9 @@ def SetFnXlsxTitle(astStockInfor):
             gstFnSheet.write(nRowOffset, nColOffset, u"연간 " + stItemName, stRedTitleFormat);
 
         if (stThisYear == u'지표'):
-            gstFnSheet.write(nRowOffset, nColOffset, stThisYear, stIndicatorFormat);
+            gstFnSheet.write(nRowOffset + 1, nColOffset, stThisYear, stIndicatorFormat);
         else:
-            gstFnSheet.write(nRowOffset, nColOffset, stThisYear, stTitleFormat);
+            gstFnSheet.write(nRowOffset + 1, nColOffset, stThisYear, stTitleFormat);
 
         nColOffset = nColOffset + 1;
 
@@ -512,9 +512,9 @@ def SetFnXlsxTitle(astStockInfor):
             gstFnSheet.write(nRowOffset, nColOffset, u"분기 " + stItemName, stGreenTitleFormat);
 
         if (stThisQuarter == u'지표'):
-            gstFnSheet.write(nRowOffset, nColOffset, stThisQuarter, stIndicatorFormat);
+            gstFnSheet.write(nRowOffset + 1, nColOffset, stThisQuarter, stIndicatorFormat);
         else:
-            gstFnSheet.write(nRowOffset, nColOffset, stThisQuarter, stTitleFormat);
+            gstFnSheet.write(nRowOffset + 1, nColOffset, stThisQuarter, stTitleFormat);
         nColOffset = nColOffset + 1;
 
     stAutoFilterCell = xl_rowcol_to_cell(1, nColOffset - 1);
