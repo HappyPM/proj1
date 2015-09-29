@@ -547,7 +547,7 @@ def SetSiseXlsxTitle(astStockInfor):
 
 def SetFnXlsxMapping(nRowOffset, nColOffset):
     nStartRow = 3;
-    nEndRow = gnMaxBaeDangStockCount + nStartRow;
+    nEndRow = (gnMaxBaeDangStockCount * 2) + nStartRow - 1;
     stStockChoiceLocation = u'A';
     stStockNameLocation = u'B';
     nTargetRowOffset = nRowOffset + 1;
