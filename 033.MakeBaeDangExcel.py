@@ -13,7 +13,7 @@ from xlsxwriter.utility import xl_rowcol_to_cell;
 import time;
 
 
-gnMaxBaeDangStockCount = 3;
+gnMaxBaeDangStockCount = 1000;
 
 
 gnOpener = urllib2.build_opener()
