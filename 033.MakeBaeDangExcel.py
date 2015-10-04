@@ -13,7 +13,8 @@ from xlsxwriter.utility import xl_rowcol_to_cell;
 import time;
 
 
-gnMaxBaeDangStockCount = 1000;
+gnMaxBaeDangStockCount  = 1000;
+gnMaxGraphStockCount    = 100;
 
 
 gnOpener = urllib2.build_opener()
@@ -22,7 +23,6 @@ gnOpener.addheaders = [('User-agent', 'Mozilla/5.0')]                 # header d
 gnGetBaeDangStockCount = int(gnMaxBaeDangStockCount + (gnMaxBaeDangStockCount * 0.2) + 1);
 if (gnGetBaeDangStockCount <= 50):
     gnGetBaeDangStockCount = 50;
-gnMaxGraphStockCount = gnMaxBaeDangStockCount;
 gnMaxKospiStockCount = gnMaxBaeDangStockCount / 2;
 gnMaxKosdaqStockCount = gnMaxBaeDangStockCount / 2;
 if ((gnMaxBaeDangStockCount % 2) > 0):
