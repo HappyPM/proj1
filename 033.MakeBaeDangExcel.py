@@ -420,6 +420,16 @@ def COMPANY_GetFinanceInfor(astStockNameCode, astStockInfor):
 
     PrintProgress(u"[완료] 종목 정보 취합: " + str(nStockLen) + " / " + str(nStockLen));
 
+def CheckHighlightField(stItemName):
+    astHighlightItemName = [u"영업이익", u"영업이익률", u"부채비율", u"PER(배)", u"PBR(배)", u"현금배당수익률"];
+
+    nLen = len(astHighlightItemName);
+    for nIndex in range(nLen):
+        if (astHighlightItemName[nIndex] == stItemName):
+            return True;
+
+    return False;
+
 gstAutoFilterStartCell  = 'A2';
 gstAutoFilterEndCell    = 'A2';
 def SetFnXlsxTitle(astStockInfor):
@@ -435,6 +445,7 @@ def SetFnXlsxTitle(astStockInfor):
     stIndicatorFormat = gstWorkBook.add_format({'bold': True, 'font_color': 'brown', 'align':'center'});
     stRedTitleFormat = gstWorkBook.add_format({'bold': True, 'font_color': 'red'});
     stGreenTitleFormat = gstWorkBook.add_format({'bold': True, 'font_color': 'green'});
+    stPinkTitleFormat = gstWorkBook.add_format({'bold': True, 'font_color': 'pink'});
     stPurpleFormat = gstWorkBook.add_format({'bold': True, 'font_color': 'purple'});
     stGrayFormat = gstWorkBook.add_format({'bold': True, 'font_color': 'gray'});
     stNavyFormat = gstWorkBook.add_format({'bold': True, 'font_color': 'navy'});
@@ -494,7 +505,10 @@ def SetFnXlsxTitle(astStockInfor):
         if (nYearIndex == 0):
             nXlsxYear = stThisYear;
         if (nXlsxYear == stThisYear):
-            gstFnSheet.write(nRowOffset, nColOffset, u"연간 " + stItemName, stRedTitleFormat);
+            if (CheckHighlightField(stItemName)):
+                gstFnSheet.write(nRowOffset, nColOffset, u"연간 " + stItemName, stPinkTitleFormat);
+            else:
+                gstFnSheet.write(nRowOffset, nColOffset, u"연간 " + stItemName, stRedTitleFormat);
 
         if (stThisYear == u'지표'):
             gstFnSheet.write(nRowOffset + 1, nColOffset, stThisYear, stIndicatorFormat);
@@ -512,7 +526,10 @@ def SetFnXlsxTitle(astStockInfor):
         if (nQuarterIndex == 0):
             nXlsxQuarter = stDay.split('/')[1];
         if (nXlsxQuarter == stThisQuarter):
-            gstFnSheet.write(nRowOffset, nColOffset, u"분기 " + stItemName, stGreenTitleFormat);
+            if (CheckHighlightField(stItemName)):
+                gstFnSheet.write(nRowOffset, nColOffset, u"분기 " + stItemName, stPinkTitleFormat);
+            else:
+                gstFnSheet.write(nRowOffset, nColOffset, u"분기 " + stItemName, stGreenTitleFormat);
 
         if (stThisQuarter == u'지표'):
             gstFnSheet.write(nRowOffset + 1, nColOffset, stThisQuarter, stIndicatorFormat);
