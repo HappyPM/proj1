@@ -1143,9 +1143,9 @@ gstFnSheet.autofilter(gstAutoFilterStartCell + ':' + gstAutoFilterEndCell);
 gstFnSheet.freeze_panes('D3');
 gstFnSheet.set_column('A:A', None, None, {'hidden': 1});
 gstSiseSheet.freeze_panes('F4');
-#gstSiseSheet.set_row(0, None, None, {'hidden': True})
+gstSiseSheet.set_row(0, None, None, {'hidden': True})
 gstGraphSheet.freeze_panes('G4');
-#gstGraphSheet.set_row(0, None, None, {'hidden': True})
+gstGraphSheet.set_row(0, None, None, {'hidden': True})
 
 PrintProgress(u"[시작] 엑셀 출력");
 gstWorkBook.close();
