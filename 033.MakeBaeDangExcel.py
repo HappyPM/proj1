@@ -23,6 +23,8 @@ gnOpener.addheaders = [('User-agent', 'Mozilla/5.0')]                 # header d
 gnGetBaeDangStockCount = int(gnMaxBaeDangStockCount + (gnMaxBaeDangStockCount * 0.2) + 1);
 if (gnGetBaeDangStockCount <= 50):
     gnGetBaeDangStockCount = 50;
+gnGetMaxKospiStockCount = gnGetBaeDangStockCount / 2;
+gnGetMaxKosdaqStockCount = gnGetBaeDangStockCount / 2;
 gnMaxKospiStockCount = gnMaxBaeDangStockCount / 2;
 gnMaxKosdaqStockCount = gnMaxBaeDangStockCount / 2;
 if ((gnMaxBaeDangStockCount % 2) > 0):
@@ -112,6 +114,7 @@ gastStockName = {};
 gastKospiStockName = [];
 gastKosdaqStockName = [];
 def COMPANY_GetStockName(nStockCode, astStockName, nMaxStockCount):
+    nGetStockCount = 0;
     PrintProgress(u"[시작] " + nStockCode + u" 종목 리스트 취합");
 
     anBaseUrl = {};
@@ -121,7 +124,7 @@ def COMPANY_GetStockName(nStockCode, astStockName, nMaxStockCount):
     nMaxPageRange = int(nMaxStockCount / 50) + 1;
 
     for nPageIndex in range(nMaxPageRange):
-        if (len(astStockName) >= nMaxStockCount):
+        if (nGetStockCount >= nMaxStockCount):
             break;
 
         anUrl = anBaseUrl[nStockCode] + str(nPageIndex + 1);
@@ -153,6 +156,7 @@ def COMPANY_GetStockName(nStockCode, astStockName, nMaxStockCount):
                 continue;
 
             astStockName.append(nStockName);
+            nGetStockCount = nGetStockCount + 1;
             gastStockName[nStockName] = 0;
             PrintProgress(u"[진행] 종목 리스트 취합: " + nStockName);
 
@@ -1117,9 +1121,9 @@ SISE_GetKospiInfor(gastKospiInfor, gastKosdaqInfor);
 
 # 종목 정보 취합
 if (gnMaxKospiStockCount > 0):
-    COMPANY_GetStockName(u'KOSPI', gastKospiStockName, gnGetBaeDangStockCount);
+    COMPANY_GetStockName(u'KOSPI', gastKospiStockName, gnGetMaxKospiStockCount);
 if (gnMaxKosdaqStockCount > 0):
-    COMPANY_GetStockName(u'KOSDAQ', gastKosdaqStockName, gnGetBaeDangStockCount);
+    COMPANY_GetStockName(u'KOSDAQ', gastKosdaqStockName, gnGetMaxKosdaqStockCount);
 COMPANY_GetStockCode(gastChangeStockNameCodeList);
 if (gnMaxKospiStockCount > 0):
     COMPANY_GetNameToCode(u'KOSPI', gastChangeStockNameCodeList, gastKospiStockName, gastStockNameCodeInfor);
