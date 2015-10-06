@@ -160,7 +160,7 @@ def COMPANY_GetStockName(nStockCode, astStockName, nMaxStockCount):
             astStockName.append(nStockName);
             nGetStockCount = nGetStockCount + 1;
             gastStockName[nStockName] = 0;
-            PrintProgress(u"[진행] 종목 리스트 취합: " + nStockName);
+            PrintProgress(u"[진행] 종목 리스트 취합" + u"(" + str(nGetStockCount) + u")" + u" : " + nStockName);
 
             if (nPageStockCount == 50):
                 break;
