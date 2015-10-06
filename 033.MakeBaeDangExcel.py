@@ -137,6 +137,7 @@ def COMPANY_GetStockName(nStockCode, astStockName, nMaxStockCount):
 
         nSkipStrLen = len(astTr[2].text);
 
+        nPageStockCount = 0;
         for nTrIndex in range(nPageTrLen):
             if (nTrIndex <= 2):
                 continue;
@@ -148,6 +149,7 @@ def COMPANY_GetStockName(nStockCode, astStockName, nMaxStockCount):
             astStockType = astTr[nTrIndex].text.split("\n");
             nStockName = astStockType[1];
 
+            nPageStockCount = nPageStockCount + 1;
             # 혹시라도 동일 종목이 존재하면 skip
             nStockLen = len(astStockName);
             if (len(nStockName) == 0):
@@ -160,7 +162,7 @@ def COMPANY_GetStockName(nStockCode, astStockName, nMaxStockCount):
             gastStockName[nStockName] = 0;
             PrintProgress(u"[진행] 종목 리스트 취합: " + nStockName);
 
-            if ((len(astStockName) % 50) == 0):
+            if (nPageStockCount == 50):
                 break;
             if (len(astStockName) >= nMaxStockCount):
                 break;
