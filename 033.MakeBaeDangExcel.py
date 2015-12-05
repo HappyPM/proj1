@@ -1,4 +1,4 @@
-#-*- coding: utf-8 -*-
+﻿#-*- coding: utf-8 -*-
 import requests;
 import pandas as pd;
 import pandas.io.data as web;
@@ -13,7 +13,7 @@ from xlsxwriter.utility import xl_rowcol_to_cell;
 import time;
 
 
-gnMaxBaeDangStockCount  = 1000;
+gnMaxBaeDangStockCount  = 1;
 gnMaxGraphStockCount    = 100;
 
 
@@ -285,55 +285,42 @@ def COMPANY_SetDummyStockInfor(stStockInfor, tables, nType, nName, nCode):
     stStockInfor['시세'] = {};
 
 def COMPANY_SetStockInfor(stStockInfor, tables, nType, nName, nCode):
-    astTable4 = tables[4].text.split('/');
-    astTable42 = astTable4[2].split(u'\n');
-    stStockInfor['CurPrice'] = astTable42[1].replace(',', '');
-    stStockInfor['CurPrice'] = stStockInfor['CurPrice'].replace(' ', '');
+    nIndexStock = 0;
+    nIndexStockSise = 1;
+    nIndexPrice = 2;
+    nIndexCode = 8;
+    nIndexWICS = 12;
+    nIndexEPS = 24;
+
+    astTable4 = tables[nIndexStockSise].text.split('/');
+    astTable42 = astTable4[2].replace('\r', '').replace('\t', '');
+    astTable42 = astTable42.split(u'\n');
+    stStockInfor['CurPrice'] = astTable42[nIndexPrice].replace(',', '');
+    stStockInfor['CurPrice'] = stStockInfor['CurPrice'].replace(u'원', '');
 
     stStockInfor['Name'] = nName;
     stStockInfor['Code'] = nCode;
     stStockInfor['Type'] = nType;
-    astSplit = tables[1].text.split(' | ');
+    astSplit = tables[nIndexStock].text.split('\n');
 
-    stSplit0 = astSplit[0].split(' ');
-    nSplit0Len = len(stSplit0);
-    stStockInfor['WebCode'] = stSplit0[nSplit0Len - 1];
+    stStockInfor['WebCode'] = astSplit[nIndexCode];
     if (stStockInfor['WebCode'] != nCode):
         return 0;
 
-#    stSplit2 = astSplit[2].split(' : ');
-#    stStockInfor['종목Type'] = stSplit2[0];
+    stSplitWICS = astSplit[nIndexWICS].split(' : ');
+    stStockInfor['WICS'] = stSplitWICS[1];
 
-    stSplit3 = astSplit[3].split('|');
-    stSplit30 = stSplit3[0].split('EPS');
-    stSplit300 = stSplit30[0].split(':');
-    stStockInfor['WICS'] = stSplit300[1];
+    stSplitEPS = astSplit[nIndexEPS].split(' ');
+    stStockInfor['EPS'] = stSplitEPS[1].replace(',', '');
 
-    stSplit301 = stSplit30[1].split(u'\xa0');
-    stStockInfor['EPS'] = stSplit301[0].replace(',', '');
-    stStockInfor['EPS'] = stStockInfor['EPS'].replace(' ', '');
+    stSplitBPS = astSplit[25].split(' ');
+    stStockInfor['BPS'] = stSplitBPS[1].replace(',', '');
 
-    stSplit31 = stSplit3[1].split(u'\xa0');
-    stSplit311 = stSplit31[1].split(' ');
-    stStockInfor['BPS'] = stSplit311[1].replace(',', '');
-    stStockInfor['BPS'] = stStockInfor['BPS'].replace(' ', '');
+    stSplitPER = astSplit[26].split(' ');
+    stStockInfor['PER'] = stSplitPER[1].replace(',', '');
 
-    stSplit32 = stSplit3[2].split(u'\xa0');
-    stSplit321 = stSplit32[1].split(' ');
-    stStockInfor['PER'] = stSplit321[1].replace(',', '');
-    stStockInfor['PER'] = stStockInfor['PER'].replace(' ', '');
-
-    stSplit34 = stSplit3[4].split(u'\xa0');
-    stSplit341 = stSplit34[1].split(' ');
-    stStockInfor['PBR'] = stSplit341[1].replace(',', '');
-    stStockInfor['PBR'] = stStockInfor['PBR'].replace(' ', '');
-
-    stSplit35 = stSplit3[5].split(u'\xa0');
-    stSplit351 = stSplit35[1].split(' ');
-    stSplit3511 = stSplit351[1].split(u'결산기');
-    stSplit35110 = stSplit3511[0].replace('%', '');
-    stStockInfor['배당률'] = stSplit35110.replace(',', '');
-    stStockInfor['배당률'] = stStockInfor['배당률'].replace(' ', '');
+    stSplitBaeDang = astSplit[29].split(' ');
+    stStockInfor['배당률'] = stSplitBaeDang[1].replace('%', '');
 
     astTable4Len = len(astTable4);
     astTable4_1M = astTable4[astTable4Len - 4].split(u'\n');
@@ -341,10 +328,10 @@ def COMPANY_SetStockInfor(stStockInfor, tables, nType, nName, nCode):
     astTable4_6M = astTable4[astTable4Len - 2].split(u'\n');
     astTable4_1Y = astTable4[astTable4Len - 1].split(u'\n');
 
-    stStockInfor['1M'] = astTable4_1M[len(astTable4_1M) - 1].replace('\r', '').replace(' ', '').replace(',', '');
-    stStockInfor['3M'] = astTable4_3M[len(astTable4_3M) - 1].replace('\r', '').replace(' ', '').replace(',', '');
-    stStockInfor['6M'] = astTable4_6M[len(astTable4_6M) - 1].replace('\r', '').replace(' ', '').replace(',', '');
-    stStockInfor['1Y'] = astTable4_1Y[0].replace('\r', '').replace(' ', '').replace(',', '');
+    stStockInfor['1M'] = astTable4_1M[len(astTable4_1M) - 1].replace('\r', '').replace(' ', '').replace(',', '').replace('%', '');
+    stStockInfor['3M'] = astTable4_3M[len(astTable4_3M) - 1].replace('\r', '').replace(' ', '').replace(',', '').replace('%', '');
+    stStockInfor['6M'] = astTable4_6M[len(astTable4_6M) - 1].replace('\r', '').replace(' ', '').replace(',', '').replace('%', '');
+    stStockInfor['1Y'] = astTable4_1Y[0].replace('\r', '').replace(' ', '').replace(',', '').replace(',', '').replace('%', '');
     stStockInfor['수익률지표'] = int(0);
     if (stStockInfor['1M'] != ''):
         if (stStockInfor['3M'] != ''):
@@ -1117,6 +1104,9 @@ def PrintProgress(stString):
 ############# main #############
 
 gstDate = GetTodayString(ganYear, ganMonth, ganDay);
+
+# 임시 검증 코드
+COMPANY_GetStockFinanceInfor(u'KOSPI', u'영풍제지', u'006740', gastStockInfor);
 
 # Kospi / Kosdaq 정보 취합
 SISE_GetKospiInfor(gastKospiInfor, gastKosdaqInfor);
