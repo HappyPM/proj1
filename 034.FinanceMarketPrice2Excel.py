@@ -279,7 +279,7 @@ class Finance:
 
     def _set_finance(self, code, freq_typ, dataset):
         #print (code)
-        url = Finance.__url + "&freq_typ" + freq_typ + "&cmp_cd=" + code
+        url = Finance.__url + "&freq_typ=" + freq_typ + "&cmp_cd=" + code
         response = Finance.__opener.open(url)
         page = response.read()
 
@@ -471,6 +471,8 @@ def COMPANY_GetFinanceInfor(astStockNameCode, astStockInfor):
         elif ((astStockNameCode[nStockIndex]['Type'] == u'KOSDAQ') and (nKosdaqCount >= gnMaxKosdaqStockCount)):
             continue;
 
+        PrintProgress(u"[진행] 종목 정보 취합: " + str(nKospiCount + nKosdaqCount) + " / " + str(nMaxGettingCount) + " - " + astStockNameCode[nStockIndex]['Name']);
+
         bRet = COMPANY_GetStockFinanceInfor(astStockNameCode[nStockIndex]['Type'],
                                         astStockNameCode[nStockIndex]['Name'],
                                         astStockNameCode[nStockIndex]['Code'],
@@ -483,8 +485,6 @@ def COMPANY_GetFinanceInfor(astStockNameCode, astStockInfor):
             nKospiCount = nKospiCount + 1;
         elif (astStockNameCode[nStockIndex]['Type'] == u'KOSDAQ'):
             nKosdaqCount = nKosdaqCount + 1;
-
-        PrintProgress(u"[진행] 종목 정보 취합: " + str(nKospiCount + nKosdaqCount) + " / " + str(nMaxGettingCount) + " - " + astStockNameCode[nStockIndex]['Name']);
 
     PrintProgress(u"[완료] 종목 정보 취합: " + str(nStockLen) + " / " + str(nStockLen));
 
@@ -1224,4 +1224,3 @@ PrintProgress(u"[시작] 엑셀 출력");
 gstWorkBook.close();
 PrintProgress(u"[완료] 엑셀 출력");
 PrintProgress(u"Complete all process");
-
