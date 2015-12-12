@@ -659,9 +659,9 @@ def EXCEL_SetFnXlsxData(nRowOffset, astStockInfor, nStockIndex):
         gstFnSheet.write(nRowOffset, nColOffset, float(stStockInfor['1Y']));
     nColOffset = nColOffset + 1;
 
-    nLevel1 = 31000000;
-    nLevel2 = 31150000;
-    nLevel3 = 31070000;
+    nLevel1 = 3100000;
+    nLevel2 = 3115000;
+    nLevel3 = 3107000;
 
     if (stStockInfor['수익률지표'] != u''):
         if (float(stStockInfor['수익률지표']) >= nLevel1):
