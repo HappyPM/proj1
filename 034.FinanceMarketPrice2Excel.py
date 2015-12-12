@@ -338,8 +338,9 @@ gastYearDataList = [];
 gastQuaterDataList = [];
 def COMPANY_GetFinance(ncode, stStockInfor):
     stFinance = Finance(ncode);
-    stStockInfor['YearDataList'] = stFinance._yeardata;
-    stStockInfor['QuaterDataList'] = stFinance._quaterdata;
+    stStockInfor['YearDataList'] = copy.deepcopy(stFinance._yeardata);
+    stStockInfor['QuaterDataList'] = copy.deepcopy(stFinance._quaterdata);
+    del stFinance;
 
 def GetSplitTitle(stString):
     stString = stString.split(u"(IFRS연결)")[0];
@@ -471,7 +472,7 @@ def COMPANY_GetFinanceInfor(astStockNameCode, astStockInfor):
         elif ((astStockNameCode[nStockIndex]['Type'] == u'KOSDAQ') and (nKosdaqCount >= gnMaxKosdaqStockCount)):
             continue;
 
-        PrintProgress(u"[진행] 종목 정보 취합: " + str(nKospiCount + nKosdaqCount) + " / " + str(nMaxGettingCount) + " - " + astStockNameCode[nStockIndex]['Name']);
+        PrintProgress(u"[진행] 종목 정보 취합: " + str(nKospiCount + nKosdaqCount) + " / " + str(nMaxGettingCount) + " - " + " < " + astStockNameCode[nStockIndex]['Code'] + " > " + astStockNameCode[nStockIndex]['Name']);
 
         bRet = COMPANY_GetStockFinanceInfor(astStockNameCode[nStockIndex]['Type'],
                                         astStockNameCode[nStockIndex]['Name'],
@@ -1184,9 +1185,6 @@ def PrintProgress(stString):
 ############# main #############
 
 gstDate = GetTodayString(ganYear, ganMonth, ganDay);
-
-# Kospi / Kosdaq 정보 취합
-SISE_GetKospiInfor(gastKospiInfor, gastKosdaqInfor);
 
 # 종목 정보 취합
 if (gnMaxKospiStockCount > 0):
