@@ -14,8 +14,8 @@ import time;
 import re;
 
 
-gnMaxBaeDangStockCount  = 1000;
-gnMaxGraphStockCount    = 100;
+gnMaxBaeDangStockCount  = 1000;     # 종목 추출 개수 - 1000 절반씩 코스피(500), 코스닥(500)
+gnMaxGraphStockCount    = 100;      # 엑셀에서 선택 가능한 종목 개수
 
 
 gnOpener = urllib2.build_opener()
@@ -63,8 +63,8 @@ def COMPANY_GetStockCode(astStockList): # OUT (gastChangeStockNameCodeList: 종�
     nUrl = 'http://www.krx.co.kr/por_kor/popup/JHPKOR13008.jsp';
     nRequest = requests.post(nUrl, data={'mkt_typ':'S', 'market_gubun': 'allVal'});
 
-    nSoup = BeautifulSoup(nRequest.text);
-    stTable = nSoup.find('table', {'id':'tbl1'});
+    stSoup = BeautifulSoup(nRequest.text);
+    stTable = stSoup.find('table', {'id':'tbl1'});
     astTrs = stTable.findAll('tr');
 
     for stTr in astTrs[1:]:
@@ -170,177 +170,63 @@ def COMPANY_GetStockName(nStockCode, astStockName, nMaxStockCount):
 
     PrintProgress(u"[완료] " + nStockCode + u" 종목 리스트 취합");
 
+def COMPANY_SetJsonData(stSoup, eFreq_typ, astDataSet):
+    astDays = stSoup.findAll("th", {"class":re.compile("r03c0[1-5]")})
 
-def get_days_to_json(soup):
-    script = soup.findAll('script')[4].string
-    day = script.split("changeFin = ", 1)[1].split(";",1)[0]
-    soup = BeautifulSoup(day)
-    day = soup.text
-    day = json.loads(day)    
-    return day
+    # 재무정보 타이틀
+    astItemNames = stSoup.findAll("th", {"class":"bg txt title "})
+    # 재무정보 값 
+    astItemValues = stSoup.findAll("td", {"class":"num line "})
 
+    nItemLen = len(astItemNames);
+    nDayLen = len(astDays);
+    for nItemIndex in range(nItemLen):
+        astIndicatorData = [];
+        stAppendData = {};
+        nMultipleIndicator = 1;
+        nSumIndicator = 0;
 
-def get_data_to_json(soup):
-    script = soup.findAll('script')[4].string
-    data = script.split("changeFinData = ", 1)[1].split(";",1)[0]
-    data = json.loads(data)    
-    return data
+        for nDayIndex in range(nDayLen):
+            nIndicator = nMultipleIndicator;
 
-def set_year_and_quater(days, data, year_data_list, quater_data_list) :
-    year_day = days[0]
-    quater_day = days[1]
+            data = {};
+            data["day"] = astDays[nDayIndex].text.replace('\r', '').replace('\t', '').replace('\n', '').split(u"(")[0];
+            data["item_name"]  = astItemNames[nItemIndex].text;
+            data["item_value"] = astItemValues[nItemIndex * nDayLen + nDayIndex].text.replace(',', '');
+            astDataSet.append(data);
 
-    for data1 in data:
-
-        yy_dat = data1[0]
-        qt_dat = data1[1]
-
-        jj = 0
-        for yy_dat1 in yy_dat:
-
-            dnam = yy_dat1[0]
-            
-            qt_dat1 = qt_dat[jj]
-            jj = jj + 1
-
-            nYearIndicator = 0;
-            nQuaterIndicator = 0;
-            nMultipleIndicator = 1;
-
-            ii = 0
-
-            astYearIndicatorData = [];
-            astQuaterIndicatorData = [];
-            stYearAppendData = {};
-            stQuaterAppendData = {};
-
-            for yy_dat2 in yy_dat1[1:]:
-                #print len(qt_dat1[ii])
-                qt_dat2 = qt_dat1[ii]
-
-                year_data = {}
-                year_data["day"] = year_day[ii]
-                year_data["item_name"] = dnam
-                year_data["item_value"] = yy_dat2.replace(',', '')
-                year_data_list.append(year_data);
-
-                quater_data = {}
-                quater_data["day"] = quater_day[ii]
-                quater_data["item_name"] = dnam
-                quater_data["item_value"] = qt_dat2.replace(',', '')
-
-                #print quater_data
-                quater_data_list.append(quater_data);
-
-                if (ii > 0):
-                    nIndicator = nMultipleIndicator;
-                    for stYearIndicatorData in astYearIndicatorData:
-                        if ((year_data["item_value"] != '') and (stYearIndicatorData["item_value"] != '') and (float(year_data["item_value"]) > 0) and (float(year_data["item_value"]) >= float(stYearIndicatorData["item_value"]))):
-                            nYearIndicator = nYearIndicator + nIndicator;
-                        nIndicator = nIndicator * 2;
-                    nIndicator = nMultipleIndicator;
-                    for stQuaterIndicatorData in astQuaterIndicatorData:
-                        if ((quater_data["item_value"] != '') and (stQuaterIndicatorData["item_value"] != '') and (float(quater_data["item_value"]) > 0) and (float(quater_data["item_value"]) >= float(stQuaterIndicatorData["item_value"]))):
-                            nQuaterIndicator = nQuaterIndicator + nIndicator;
-                        nIndicator = nIndicator * 2;
-
-                    nMultipleIndicator = nMultipleIndicator * 10;
-                astYearIndicatorData.append(year_data);
-                astQuaterIndicatorData.append(quater_data);
-
-                ii = ii + 1;
-            stYearAppendData["day"] = u"지표/";
-            stYearAppendData["item_name"] = dnam;
-            stYearAppendData["item_value"] = unicode(nYearIndicator);
-            year_data_list.append(stYearAppendData);
-            stQuaterAppendData["day"] = u"/지표";
-            stQuaterAppendData["item_name"] = dnam;
-            stQuaterAppendData["item_value"] = unicode(nQuaterIndicator);
-            quater_data_list.append(stQuaterAppendData);
-
-# 제무제표 class
-class Finance:
-    __url = "http://companyinfo.stock.naver.com/v1/company/ajax/cF1001.aspx?fin_typ=0"
-    __opener = urllib2.build_opener()
-    __opener.addheaders = [('User-agent', 'Mozilla/5.0')]                 # header define
-
-    '''
-    freq_type : A 모두 , Y : 연도, Q : 분기 
-    code : 종목코드 (6자리)
-    '''
-    def __init__(self, code = "000660", freq_typ = "A"):
-        self._freq_typ = freq_typ
-        if self._freq_typ == "A" or self._freq_typ == "Y": 
-            self._yeardata = []
-            self._set_finance(code, "Y", self._yeardata)
-        if self._freq_typ == "A" or self._freq_typ == "Q":
-            self._quaterdata = []
-            self._set_finance(code, "Q", self._quaterdata)
-
-    def _set_finance(self, code, freq_typ, dataset):
-        #print (code)
-        url = Finance.__url + "&freq_typ=" + freq_typ + "&cmp_cd=" + code
-        response = Finance.__opener.open(url)
-        page = response.read()
-
-        self._soup = BeautifulSoup(page, "lxml");
-        self._set_json_data(freq_typ, dataset)
-
-    def _set_json_data(self, freq_typ, dataset):       
-        # 날짜 (예상치 제외)
-        days = self._soup.findAll("th", {"class":re.compile("r03c0[1-5]")})
-
-        # 재무정보 타이틀
-        item_names = self._soup.findAll("th", {"class":"bg txt title "})
-        # 재무정보 값 
-        item_values = self._soup.findAll("td", {"class":"num line "})
-
-        nItemLen = len(item_names);
-        nDayLen = len(days);
-        for nItemIndex in range(nItemLen):
-            astIndicatorData = [];
-            stAppendData = {};
-            nMultipleIndicator = 1;
-            nSumIndicator = 0;
-
-            for nDayIndex in range(nDayLen):
+            if (nDayIndex > 0):
                 nIndicator = nMultipleIndicator;
+                for stIndicatorData in astIndicatorData:
+                    if ((data["item_value"] != '') and (stIndicatorData["item_value"] != '') and (float(data["item_value"]) > 0) and (float(data["item_value"]) >= float(stIndicatorData["item_value"]))):
+                        nSumIndicator = nSumIndicator + nIndicator;
+                    nIndicator = nIndicator * 2;
 
-                data = {};
-                data["day"] = days[nDayIndex].text.replace('\r', '').replace('\t', '').replace('\n', '').split(u"(")[0];
-                data["item_name"]  = item_names[nItemIndex].text;
-                data["item_value"] = item_values[nItemIndex * nDayLen + nDayIndex].text.replace(',', '');
-                dataset.append(data);
+                nMultipleIndicator = nMultipleIndicator * 100;
+            astIndicatorData.append(data);
 
-                if (nDayIndex > 0):
-                    nIndicator = nMultipleIndicator;
-                    for stIndicatorData in astIndicatorData:
-                        if ((data["item_value"] != '') and (stIndicatorData["item_value"] != '') and (float(data["item_value"]) > 0) and (float(data["item_value"]) >= float(stIndicatorData["item_value"]))):
-                            nSumIndicator = nSumIndicator + nIndicator;
-                        nIndicator = nIndicator * 2;
+        stAppendData["day"] = u"지표/";
+        stAppendData["item_name"] = astItemNames[nItemIndex].text;
+        stAppendData["item_value"] = unicode(nSumIndicator);
+        astDataSet.append(stAppendData);
 
-                    nMultipleIndicator = nMultipleIndicator * 100;
-                astIndicatorData.append(data);
-
-            stAppendData["day"] = u"지표/";
-            stAppendData["item_name"] = item_names[nItemIndex].text;
-            stAppendData["item_value"] = unicode(nSumIndicator);
-            dataset.append(stAppendData);
-
-
-    def get_data(self, freq_typ = "Y"):
-        if freq_typ == "Y" :
-            return self._yeardata
-        elif freq_typ == "Q":
-            return self._quaterdata
+def COMPANY_SetFinance(nCode, eFreq_typ, stDataSet):
+    anUrl = "http://companyinfo.stock.naver.com/v1/company/ajax/cF1001.aspx?fin_typ=0"
+    strUrl = anUrl + "&freq_typ=" + eFreq_typ + "&cmp_cd=" + str(nCode)
+    stResponse = GetUrlOpen(strUrl);
+    stPage = stResponse.read();
+    stSoup = BeautifulSoup(stPage);
+    COMPANY_SetJsonData(stSoup, eFreq_typ, stDataSet);
 
 gastYearDataList = [];
 gastQuaterDataList = [];
 def COMPANY_GetFinance(ncode, stStockInfor):
-    stFinance = Finance(ncode);
-    stStockInfor['YearDataList'] = copy.deepcopy(stFinance._yeardata);
-    stStockInfor['QuaterDataList'] = copy.deepcopy(stFinance._quaterdata);
-    del stFinance;
+    stYearData = [];
+    stQuaterData = [];
+    COMPANY_SetFinance(ncode, "Y", stYearData);
+    COMPANY_SetFinance(ncode, "Q", stQuaterData);
+    stStockInfor['YearDataList'] = copy.deepcopy(stYearData);
+    stStockInfor['QuaterDataList'] = copy.deepcopy(stQuaterData);
 
 def GetSplitTitle(stString):
     stString = stString.split(u"(IFRS연결)")[0];
@@ -442,10 +328,10 @@ def COMPANY_GetStockFinanceInfor(nType, nName, nCode, astStockInfor):
     stStockInfor = {};
     nCodeUrl = 'http://companyinfo.stock.naver.com/v1/company/c1010001.aspx?cmp_cd=';
     nCodeUrl = nCodeUrl + nCode;
-    nResponse = GetUrlOpen(nCodeUrl);
-    nPage = nResponse.read();
-    nSoup = BeautifulSoup(nPage);
-    tables = nSoup.findAll('table');
+    stResponse = GetUrlOpen(nCodeUrl);
+    stPage = stResponse.read();
+    stSoup = BeautifulSoup(stPage);
+    tables = stSoup.findAll('table');
 
     if (len(tables) == 0):
         return 0;
@@ -472,7 +358,7 @@ def COMPANY_GetFinanceInfor(astStockNameCode, astStockInfor):
         elif ((astStockNameCode[nStockIndex]['Type'] == u'KOSDAQ') and (nKosdaqCount >= gnMaxKosdaqStockCount)):
             continue;
 
-        PrintProgress(u"[진행] 종목 정보 취합: " + str(nKospiCount + nKosdaqCount) + " / " + str(nMaxGettingCount) + " - " + " < " + astStockNameCode[nStockIndex]['Code'] + " > " + astStockNameCode[nStockIndex]['Name']);
+        PrintProgress(u"[진행] 종목 정보 취합: " + str(nKospiCount + nKosdaqCount) + " / " + str(nMaxGettingCount) + " - " + "<" + astStockNameCode[nStockIndex]['Code'] + "> " + astStockNameCode[nStockIndex]['Name']);
 
         bRet = COMPANY_GetStockFinanceInfor(astStockNameCode[nStockIndex]['Type'],
                                         astStockNameCode[nStockIndex]['Name'],
@@ -501,7 +387,7 @@ def CheckHighlightField(stItemName):
 
 gstAutoFilterStartCell  = 'A2';
 gstAutoFilterEndCell    = 'A2';
-def SetFnXlsxTitle(astStockInfor):
+def EXCEL_SetFnXlsxTitle(astStockInfor):
     stStockInfor = astStockInfor[0];
     nStockLen = len(astStockInfor);
     nXlsxColumnOffset = 0;
@@ -609,7 +495,7 @@ def SetFnXlsxTitle(astStockInfor):
     stAutoFilterCell = xl_rowcol_to_cell(1, nColOffset - 1);
     return stAutoFilterCell;
 
-def SetSiseXlsxTitle(astStockInfor):
+def EXCEL_SetSiseXlsxTitle(astStockInfor):
     nXlsxColumnOffset = 0;
     nRowOffset = 1;
     nColOffset = 0;
@@ -634,7 +520,7 @@ def SetSiseXlsxTitle(astStockInfor):
         gstSiseSheet.write(nRowOffset, nColOffset, stStockInfor['Date'], stPurpleFormat);
         nRowOffset = nRowOffset + 1;
 
-def SetFnXlsxMapping(nRowOffset, nColOffset):
+def EXCEL_SetFnXlsxMapping(nRowOffset, nColOffset):
     nStartRow = 3;
     nEndRow = gnMaxBaeDangStockCount + nStartRow - 1;
     stStockChoiceLocation = u'B';
@@ -647,7 +533,7 @@ def SetFnXlsxMapping(nRowOffset, nColOffset):
     stString = stString + u'IFERROR(MATCH(' + stStockNameLocation + str(nTargetRowOffset) + u',' + stStockChoiceLocation + str(nStartRow) + u':' + stStockChoiceLocation + str(nEndRow) + u',0), \"\"))';
     gstFnSheet.write(nRowOffset, nColOffset, stString);
 
-def SetFnXlsxData(nRowOffset, astStockInfor, nStockIndex):
+def EXCEL_SetFnXlsxData(nRowOffset, astStockInfor, nStockIndex):
     stStockInfor = astStockInfor[nStockIndex];
     nColOffset = 0;
     nCodeUrl = 'http://finance.naver.com/item/main.nhn?code=';
@@ -663,7 +549,7 @@ def SetFnXlsxData(nRowOffset, astStockInfor, nStockIndex):
     stIndicator3Format = gstWorkBook.add_format({'bg_color': '#FFFFEF'});
 
     # 종목매핑
-    SetFnXlsxMapping(nRowOffset, nColOffset);
+    EXCEL_SetFnXlsxMapping(nRowOffset, nColOffset);
     nColOffset = nColOffset + 1;
     nColOffset = nColOffset + 1;
 
@@ -776,7 +662,7 @@ def SetFnXlsxData(nRowOffset, astStockInfor, nStockIndex):
                 gstFnSheet.write(nRowOffset, nColOffset, float(stQuaterDataList["item_value"]));
         nColOffset = nColOffset + 1;
 
-def SetKospiXlsxData(nColOffset, nType, astStockInfor, astBaseInfor):
+def EXCEL_SetKospiXlsxData(nColOffset, nType, astStockInfor, astBaseInfor):
     nRowOffset = 1;
     bFirstPrice = 0;
     nCurPrice = 0;
@@ -830,7 +716,7 @@ def SetKospiXlsxData(nColOffset, nType, astStockInfor, astBaseInfor):
             nLastDayIndex = nLastDayIndex + 1;
         nRowOffset = nRowOffset + 1;
 
-def SetSiseXlsxData(nColOffset, astKospiInfor, stStockInfor):
+def EXCEL_SetSiseXlsxData(nColOffset, astKospiInfor, stStockInfor):
     nRowOffset = 1;
     nKospiIndex = 0;
     astSiseStockInfor = stStockInfor['시세'];
@@ -883,7 +769,7 @@ def SetSiseXlsxData(nColOffset, astKospiInfor, stStockInfor):
 
 
 # 누적승리 출력
-def PrintWinningRate(nRowOffset, nColOffset, nTitle, nMaxDateCount):
+def EXCEL_PrintWinningRate(nRowOffset, nColOffset, nTitle, nMaxDateCount):
     stTitleBoldFormat = gstWorkBook.add_format({'bold': True, 'font_color': 'blue'});
     stRedTitleBoldFormat = gstWorkBook.add_format({'bold': True, 'font_color': 'red'});
     stRateFormat = gstWorkBook.add_format({'num_format':'0.000'});
@@ -907,7 +793,7 @@ def PrintWinningRate(nRowOffset, nColOffset, nTitle, nMaxDateCount):
 
         gstGraphSheet.write(nDateRowOffset, nColOffset, stString, stRateFormat);
 
-def SetGraphXlsxData(nMaxDateCount, nMaxStockCount):
+def EXCEL_SetGraphXlsxData(nMaxDateCount, nMaxStockCount):
     nStartGraphRowOffset = 3;
     nMaxRowOffset = nMaxDateCount + nStartGraphRowOffset;
 
@@ -989,8 +875,8 @@ def SetGraphXlsxData(nMaxDateCount, nMaxStockCount):
 
 
     # KOSPI 누적승리
-    PrintWinningRate(nGraphRowOffset, nKospiVsColOffset, u"KOSPI", nMaxDateCount);
-    PrintWinningRate(nGraphRowOffset, nKosdaqVsColOffset, u"KOSDAQ", nMaxDateCount);
+    EXCEL_PrintWinningRate(nGraphRowOffset, nKospiVsColOffset, u"KOSPI", nMaxDateCount);
+    EXCEL_PrintWinningRate(nGraphRowOffset, nKosdaqVsColOffset, u"KOSDAQ", nMaxDateCount);
 
     # 선정 종목 (그래프 취합 50개 제한)
     nStockCount = nMaxStockCount;
@@ -1076,41 +962,41 @@ def SetGraphXlsxData(nMaxDateCount, nMaxStockCount):
     stChart.set_size({'width':770, 'height':504});
     gstGraphSheet.insert_chart(stGraphCell, stChart);
 
-def COMPANY_WriteExcelFile(astKospiInfor, astKosdaqInfor, astStockInfor):
+def EXCEL_WriteExcelFile(astKospiInfor, astKosdaqInfor, astStockInfor):
     PrintProgress(u"[시작] 엑셀 취합");
     nColOffset = 0;
     nRowOffset = 0;
 
     # 시세 Title 출력
-    SetSiseXlsxTitle(astKospiInfor);
+    EXCEL_SetSiseXlsxTitle(astKospiInfor);
     nColOffset = nColOffset + 1;
-    SetKospiXlsxData(nColOffset, 'KOSPI', astKospiInfor, astKospiInfor);
+    EXCEL_SetKospiXlsxData(nColOffset, 'KOSPI', astKospiInfor, astKospiInfor);
     nColOffset = nColOffset + 2;
-    SetKospiXlsxData(nColOffset, 'KOSDAQ', astKosdaqInfor, astKospiInfor);
+    EXCEL_SetKospiXlsxData(nColOffset, 'KOSDAQ', astKosdaqInfor, astKospiInfor);
     nColOffset = nColOffset + 2;
     PrintProgress(u"[진행] 시세 Title 출력");
 
     # 시세 데이터 출력
     nStockLen = len(astStockInfor);
     for nStockIndex in range(nStockLen):
-        SetSiseXlsxData(nColOffset, astKospiInfor, astStockInfor[nStockIndex]);
+        EXCEL_SetSiseXlsxData(nColOffset, astKospiInfor, astStockInfor[nStockIndex]);
         nColOffset = nColOffset + 2;
         PrintProgress(u"[진행] 시세 데이터 출력: " + str(nStockIndex + 1) + " / " + str(nStockLen) + " - " + astStockInfor[nStockIndex]['Name']);
 
     # 재무 Title 출력
-    stAutoFilter = SetFnXlsxTitle(astStockInfor);
+    stAutoFilter = EXCEL_SetFnXlsxTitle(astStockInfor);
     nRowOffset = nRowOffset + 2;
     PrintProgress(u"[진행] 재무 Title 출력");
 
     # 재무 데이터 출력
     nStockLen = len(astStockInfor);
     for nStockIndex in range(nStockLen):
-        SetFnXlsxData(nRowOffset, astStockInfor, nStockIndex);
+        EXCEL_SetFnXlsxData(nRowOffset, astStockInfor, nStockIndex);
         nRowOffset = nRowOffset + 1;
         PrintProgress(u"[진행] 재무 데이터 출력: " + str(nStockIndex + 1) + " / " + str(nStockLen) + " - " + astStockInfor[nStockIndex]['Name']);
 
     # 그래프 출력
-    SetGraphXlsxData(len(astKospiInfor), len(astStockInfor));
+    EXCEL_SetGraphXlsxData(len(astKospiInfor), len(astStockInfor));
     PrintProgress(u"[진행] 그래프 출력");
     PrintProgress(u"[완료] 엑셀 취합");
     return stAutoFilter;
@@ -1143,10 +1029,10 @@ def SISE_GetNonStockInfor(nStockCode, stStockInfor):   # IN (nStock: 종목코�
 def SISE_GetStockInfor(nStockCode, nStockType, stStockInfor):   # IN (nStock: 종목코드), OUT (stStockInfor: 종목 정보)
     nCodeUrl = 'http://www.etomato.com/home/itemAnalysis/ItemPrice.aspx?item_code=';
     nCodeUrl = nCodeUrl + nStockCode;
-    nResponse = GetUrlOpen(nCodeUrl);
-    nPage = nResponse.read();
-    nSoup = BeautifulSoup(nPage);
-    tables = nSoup.findAll('table');
+    stResponse = GetUrlOpen(nCodeUrl);
+    stPage = stResponse.read();
+    stSoup = BeautifulSoup(stPage);
+    tables = stSoup.findAll('table');
 
     # 해당 Page로부터 시세 정보 확인 불가
     if ((len(tables) <= 13) or (len(tables[13].text.split(u'창출')) <= 1)):
@@ -1186,6 +1072,9 @@ def PrintProgress(stString):
 
 gstDate = GetTodayString(ganYear, ganMonth, ganDay);
 
+# Kospi / Kosdaq 정보 취합
+SISE_GetKospiInfor(gastKospiInfor, gastKosdaqInfor);
+
 # 종목 정보 취합
 if (gnMaxKospiStockCount > 0):
     COMPANY_GetStockName(u'KOSPI', gastKospiStockName, gnGetMaxKospiStockCount);
@@ -1208,7 +1097,7 @@ gstFnSheet          = gstWorkBook.add_worksheet(gstFnSheetName);
 gstSiseSheet        = gstWorkBook.add_worksheet(gstSiseSheetName);
 gstGraphSheet       = gstWorkBook.add_worksheet(gstGraphSheetName);
 
-gstAutoFilterEndCell = COMPANY_WriteExcelFile(gastKospiInfor, gastKosdaqInfor, gastStockInfor);
+gstAutoFilterEndCell = EXCEL_WriteExcelFile(gastKospiInfor, gastKosdaqInfor, gastStockInfor);
 
 gstFnSheet.autofilter(gstAutoFilterStartCell + ':' + gstAutoFilterEndCell);
 gstFnSheet.freeze_panes('D3');
