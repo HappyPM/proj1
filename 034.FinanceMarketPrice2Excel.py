@@ -170,13 +170,26 @@ def COMPANY_GetStockName(nStockCode, astStockName, nMaxStockCount):
 
     PrintProgress(u"[완료] " + nStockCode + u" 종목 리스트 취합");
 
-def COMPANY_SetJsonData(stSoup, eFreq_typ, astDataSet):
+def COMPANY_CheckExpectSum(stItemName):
+    astExpectSumName = [u"매출액", u"영업이익", u"세전계속사업이익", u"당기순이익", u"당기순이익(지배)", u"당기순이익(비지배)", u"당기순이익(비지배)",
+                        u"영업활동현금흐름", u"투자활동현금흐름", u"재무활동현금흐름", u"CAPEX", u"FCF", u"현금DPS(원)"];
+
+    nLen = len(astExpectSumName);
+    for nIndex in range(nLen):
+        if (astExpectSumName[nIndex] == stItemName):
+            return True;
+
+    return False;
+
+def COMPANY_SetJsonData(stSoup, eFreq_typ, astDataSet, stExpectDataSet):
     astDays = stSoup.findAll("th", {"class":re.compile("r03c0[1-5]")})
+    astDaysExpect = stSoup.findAll("th", {"class":re.compile("r03c0")})
 
     # 재무정보 타이틀
     astItemNames = stSoup.findAll("th", {"class":"bg txt title "})
     # 재무정보 값 
     astItemValues = stSoup.findAll("td", {"class":"num line "})
+    astItemValuesExpect = stSoup.findAll("td")
 
     nItemLen = len(astItemNames);
     nDayLen = len(astDays);
@@ -187,46 +200,80 @@ def COMPANY_SetJsonData(stSoup, eFreq_typ, astDataSet):
         nSumIndicator = 0;
 
         for nDayIndex in range(nDayLen):
-            nIndicator = nMultipleIndicator;
-
+            # 주요 Factor 추가
             data = {};
             data["day"] = astDays[nDayIndex].text.replace('\r', '').replace('\t', '').replace('\n', '').split(u"(")[0];
-            data["item_name"]  = astItemNames[nItemIndex].text;
+            data["item_name"] = astItemNames[nItemIndex].text.replace(u'\xa0', '');
             data["item_value"] = astItemValues[nItemIndex * nDayLen + nDayIndex].text.replace(',', '');
             astDataSet.append(data);
 
+            # 지표 계산
             if (nDayIndex > 0):
                 nIndicator = nMultipleIndicator;
                 for stIndicatorData in astIndicatorData:
                     if ((data["item_value"] != '') and (stIndicatorData["item_value"] != '') and (float(data["item_value"]) > 0) and (float(data["item_value"]) >= float(stIndicatorData["item_value"]))):
                         nSumIndicator = nSumIndicator + nIndicator;
                     nIndicator = nIndicator * 2;
-
-                nMultipleIndicator = nMultipleIndicator * 100;
+                if (nMultipleIndicator <= 100):
+                    nMultipleIndicator = nMultipleIndicator * 10;
+                else:
+                    nMultipleIndicator = nMultipleIndicator * 100;
             astIndicatorData.append(data);
 
+        if (eFreq_typ == 'Y'):
+            data = {};
+            nStartIndex = ((nDayLen + 1) * nItemIndex) + 1;
+            nQuarterCount = 4;
+            nSum = 0;
+            nAvg = 0;
+
+            # Next 연간 Factor 예측
+            for nExIndex in range(nQuarterCount):
+                nCurIndex = nStartIndex + nExIndex;
+                if (stExpectDataSet[nCurIndex]['item_value'] != u''):
+                    nSum = nSum + float(stExpectDataSet[nCurIndex]['item_value']);
+            nAvg = nSum / nQuarterCount;
+
+            # Next 연간 Factor 추가
+            data["day"] = astDaysExpect[nDayLen + 1].text.replace('\r', '').replace('\t', '').replace('\n', '').split(u"(")[0];
+            data["item_name"] = astItemNames[nItemIndex].text.replace(u'\xa0', '');
+            if (COMPANY_CheckExpectSum(data["item_name"])):
+                data["item_value"] = nSum;
+            else:
+                data["item_value"] = nAvg;
+            astDataSet.append(data);
+
+            # Next 연간 지표 계산
+            nIndicator = nMultipleIndicator;
+            for stIndicatorData in astIndicatorData:
+                if ((data["item_value"] != '') and (stIndicatorData["item_value"] != '') and (float(data["item_value"]) > 0) and (float(data["item_value"]) >= float(stIndicatorData["item_value"]))):
+                    nSumIndicator = nSumIndicator + nIndicator;
+                nIndicator = nIndicator * 2;
+
+        # 지표 추가
         stAppendData["day"] = u"지표/";
         stAppendData["item_name"] = astItemNames[nItemIndex].text;
         stAppendData["item_value"] = unicode(nSumIndicator);
         astDataSet.append(stAppendData);
 
-def COMPANY_SetFinance(nCode, eFreq_typ, stDataSet):
+def COMPANY_SetFinance(nCode, eFreq_typ, stDataSet, stExpectDataSet):
     anUrl = "http://companyinfo.stock.naver.com/v1/company/ajax/cF1001.aspx?fin_typ=0"
     strUrl = anUrl + "&freq_typ=" + eFreq_typ + "&cmp_cd=" + str(nCode)
     stResponse = GetUrlOpen(strUrl);
     stPage = stResponse.read();
     stSoup = BeautifulSoup(stPage);
-    COMPANY_SetJsonData(stSoup, eFreq_typ, stDataSet);
+    COMPANY_SetJsonData(stSoup, eFreq_typ, stDataSet, stExpectDataSet);
 
 gastYearDataList = [];
 gastQuaterDataList = [];
 def COMPANY_GetFinance(ncode, stStockInfor):
-    stYearData = [];
     stQuaterData = [];
-    COMPANY_SetFinance(ncode, "Y", stYearData);
-    COMPANY_SetFinance(ncode, "Q", stQuaterData);
-    stStockInfor['YearDataList'] = copy.deepcopy(stYearData);
+    COMPANY_SetFinance(ncode, "Q", stQuaterData, 0);
     stStockInfor['QuaterDataList'] = copy.deepcopy(stQuaterData);
+
+    stYearData = [];
+    COMPANY_SetFinance(ncode, "Y", stYearData, stQuaterData);
+    stStockInfor['YearDataList'] = copy.deepcopy(stYearData);
 
 def GetSplitTitle(stString):
     stString = stString.split(u"(IFRS연결)")[0];
@@ -612,9 +659,9 @@ def EXCEL_SetFnXlsxData(nRowOffset, astStockInfor, nStockIndex):
         gstFnSheet.write(nRowOffset, nColOffset, float(stStockInfor['1Y']));
     nColOffset = nColOffset + 1;
 
-    nLevel1 = 15000000;
-    nLevel2 = 15070000;
-    nLevel3 = 15030000;
+    nLevel1 = 31000000;
+    nLevel2 = 31150000;
+    nLevel3 = 31070000;
 
     if (stStockInfor['수익률지표'] != u''):
         if (float(stStockInfor['수익률지표']) >= nLevel1):
