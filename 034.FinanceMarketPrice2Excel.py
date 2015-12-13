@@ -240,7 +240,7 @@ def COMPANY_SetJsonData(stSoup, eFreq_typ, astDataSet, stExpectDataSet):
             if (COMPANY_CheckExpectSum(data["item_name"])):
                 data["item_value"] = nSum;
             else:
-                data["item_value"] = nAvg;
+                data["item_value"] = round(nAvg, 2);
             astDataSet.append(data);
 
             # Next 연간 지표 계산
