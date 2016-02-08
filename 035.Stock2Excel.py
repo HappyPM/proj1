@@ -950,13 +950,14 @@ def EXCEL_SetGraphXlsxData(nMaxDateCount, nMaxStockCount):
                 gstGraphSheet.write(nRowOffset, nStockColOffset + nStockIndex, stString);
 
                 # 년도별 누적 승리율 출력
-                if (nRowOffset == 2) and (nStockIndex < 6):
-                    if (nStockIndex == 0): stString = "=IFERROR(ROUNDUP(INDIRECT(ADDRESS(MATCH(\"11-04-01\", A" + str(nStartFnRowOffset+1) + ":A" + str(stMaxRowOffset) + ", 0)+" + str(nStartFnRowOffset) + "," + str(nKospiVsSumColOffset+1) + "))," + str(nRoundUp) + "),\"\")";
-                    if (nStockIndex == 1): stString = "=IFERROR(ROUNDUP(INDIRECT(ADDRESS(MATCH(\"12-04-02\", A" + str(nStartFnRowOffset+1) + ":A" + str(stMaxRowOffset) + ", 0)+" + str(nStartFnRowOffset) + "," + str(nKospiVsSumColOffset+1) + "))," + str(nRoundUp) + "),\"\")";
-                    if (nStockIndex == 2): stString = "=IFERROR(ROUNDUP(INDIRECT(ADDRESS(MATCH(\"13-04-01\", A" + str(nStartFnRowOffset+1) + ":A" + str(stMaxRowOffset) + ", 0)+" + str(nStartFnRowOffset) + "," + str(nKospiVsSumColOffset+1) + "))," + str(nRoundUp) + "),\"\")";
-                    if (nStockIndex == 3): stString = "=IFERROR(ROUNDUP(INDIRECT(ADDRESS(MATCH(\"14-04-01\", A" + str(nStartFnRowOffset+1) + ":A" + str(stMaxRowOffset) + ", 0)+" + str(nStartFnRowOffset) + "," + str(nKospiVsSumColOffset+1) + "))," + str(nRoundUp) + "),\"\")";
-                    if (nStockIndex == 4): stString = "=IFERROR(ROUNDUP(INDIRECT(ADDRESS(MATCH(\"15-04-01\", A" + str(nStartFnRowOffset+1) + ":A" + str(stMaxRowOffset) + ", 0)+" + str(nStartFnRowOffset) + "," + str(nKospiVsSumColOffset+1) + "))," + str(nRoundUp) + "),\"\")";
-                    if (nStockIndex == 5): stString = "=IFERROR(ROUNDUP(INDIRECT(ADDRESS(" + str(stMaxRowOffset) + "," + str(nKospiVsSumColOffset+1) + "))," + str(nRoundUp) + "),\"\")";
+                if (nRowOffset == 2) and (nStockIndex < 7):
+                    if (nStockIndex == 0): stString = "=IFERROR(ROUNDUP(INDIRECT(ADDRESS(MATCH(\"11-01-03\", A" + str(nStartFnRowOffset+1) + ":A" + str(stMaxRowOffset) + ", 0)+" + str(nStartFnRowOffset) + "," + str(nKospiVsSumColOffset+1) + "))," + str(nRoundUp) + "),\"\")";
+                    if (nStockIndex == 1): stString = "=IFERROR(ROUNDUP(INDIRECT(ADDRESS(MATCH(\"12-01-02\", A" + str(nStartFnRowOffset+1) + ":A" + str(stMaxRowOffset) + ", 0)+" + str(nStartFnRowOffset) + "," + str(nKospiVsSumColOffset+1) + "))," + str(nRoundUp) + "),\"\")";
+                    if (nStockIndex == 2): stString = "=IFERROR(ROUNDUP(INDIRECT(ADDRESS(MATCH(\"13-01-02\", A" + str(nStartFnRowOffset+1) + ":A" + str(stMaxRowOffset) + ", 0)+" + str(nStartFnRowOffset) + "," + str(nKospiVsSumColOffset+1) + "))," + str(nRoundUp) + "),\"\")";
+                    if (nStockIndex == 3): stString = "=IFERROR(ROUNDUP(INDIRECT(ADDRESS(MATCH(\"14-01-02\", A" + str(nStartFnRowOffset+1) + ":A" + str(stMaxRowOffset) + ", 0)+" + str(nStartFnRowOffset) + "," + str(nKospiVsSumColOffset+1) + "))," + str(nRoundUp) + "),\"\")";
+                    if (nStockIndex == 4): stString = "=IFERROR(ROUNDUP(INDIRECT(ADDRESS(MATCH(\"15-01-02\", A" + str(nStartFnRowOffset+1) + ":A" + str(stMaxRowOffset) + ", 0)+" + str(nStartFnRowOffset) + "," + str(nKospiVsSumColOffset+1) + "))," + str(nRoundUp) + "),\"\")";
+                    if (nStockIndex == 5): stString = "=IFERROR(ROUNDUP(INDIRECT(ADDRESS(MATCH(\"16-01-04\", A" + str(nStartFnRowOffset+1) + ":A" + str(stMaxRowOffset) + ", 0)+" + str(nStartFnRowOffset) + "," + str(nKospiVsSumColOffset+1) + "))," + str(nRoundUp) + "),\"\")";
+                    if (nStockIndex == 6): stString = "=IFERROR(ROUNDUP(INDIRECT(ADDRESS(" + str(stMaxRowOffset) + "," + str(nKospiVsSumColOffset+1) + "))," + str(nRoundUp) + "),\"\")";
                     gstGraphSheet.write(nRowOffset, nStockColOffset + nStockIndex, stString);
 
             # 선정 종목 매핑 정보
