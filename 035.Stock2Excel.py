@@ -1,4 +1,4 @@
-﻿#-*- coding: utf-8 -*-
+#-*- coding: utf-8 -*-
 import requests;
 import pandas as pd;
 import pandas.io.data as web;
@@ -784,9 +784,34 @@ def EXCEL_SetSiseXlsxData(nColOffset, astKospiInfor, stStockInfor):
             nPrevPrice = nCurPrice;
         nRowOffset = nRowOffset + 1;
 
+# 승리 출력
+def EXCEL_PrintWinningDayRate(nRowOffset, nColOffset, nTitle, nMaxDateCount):
+    nBaseColOffset = 1;
+    stTitleBoldFormat = gstWorkBook.add_format({'bold': True, 'font_color': 'magenta'});
+    stRedTitleBoldFormat = gstWorkBook.add_format({'bold': True, 'font_color': 'brown'});
+    stRateFormat = gstWorkBook.add_format({'num_format':'0.000'});
+
+    gstGraphSheet.write(nRowOffset, nColOffset, nTitle, stTitleBoldFormat);
+    gstGraphSheet.write(nRowOffset + 1, nColOffset, u"오늘 승리", stRedTitleBoldFormat);
+    for nDateIndex in range(nMaxDateCount):
+        if (nDateIndex == 0):
+            continue;
+
+        nDateRowOffset = nDateIndex + (nRowOffset + 2);
+
+        if (nTitle == u"KOSPI"):
+            stAvgStockRate = xl_rowcol_to_cell(nDateRowOffset, nColOffset - (nBaseColOffset + 0));
+        else:
+            stAvgStockRate = xl_rowcol_to_cell(nDateRowOffset, nColOffset - (nBaseColOffset + 1));
+        stKospiRate = xl_rowcol_to_cell(nDateRowOffset, nColOffset - (nBaseColOffset + 2));
+
+        stString = "=IFERROR(" + stAvgStockRate + " - " + stKospiRate + ", \"\")";
+
+        gstGraphSheet.write(nDateRowOffset, nColOffset, stString, stRateFormat);
 
 # 누적승리 출력
-def EXCEL_PrintWinningRate(nRowOffset, nColOffset, nTitle, nMaxDateCount):
+def EXCEL_PrintWinningSumRate(nRowOffset, nColOffset, nTitle, nMaxDateCount):
+    nBaseColOffset = 3;
     stTitleBoldFormat = gstWorkBook.add_format({'bold': True, 'font_color': 'blue'});
     stRedTitleBoldFormat = gstWorkBook.add_format({'bold': True, 'font_color': 'red'});
     stRateFormat = gstWorkBook.add_format({'num_format':'0.000'});
@@ -801,10 +826,10 @@ def EXCEL_PrintWinningRate(nRowOffset, nColOffset, nTitle, nMaxDateCount):
 
         stAccumulatedCell = xl_rowcol_to_cell(nDateRowOffset - 1, nColOffset);
         if (nTitle == u"KOSPI"):
-            stAvgStockRate = xl_rowcol_to_cell(nDateRowOffset, nColOffset - 1);
+            stAvgStockRate = xl_rowcol_to_cell(nDateRowOffset, nColOffset - (nBaseColOffset + 0));
         else:
-            stAvgStockRate = xl_rowcol_to_cell(nDateRowOffset, nColOffset - 2);
-        stKospiRate = xl_rowcol_to_cell(nDateRowOffset, nColOffset - 3);
+            stAvgStockRate = xl_rowcol_to_cell(nDateRowOffset, nColOffset - (nBaseColOffset + 1));
+        stKospiRate = xl_rowcol_to_cell(nDateRowOffset, nColOffset - (nBaseColOffset + 2));
 
         stString = "=IFERROR(" + stAccumulatedCell + " + (" + stAvgStockRate + " - " + stKospiRate + "), \"\")";
 
@@ -832,9 +857,11 @@ def EXCEL_SetGraphXlsxData(nMaxDateCount, nMaxStockCount):
     nKospiColOffset = 1;
     nKosdaqColOffset = 2;
     nAvgStockColOffset = 3;
-    nKospiVsColOffset = 4;
-    nKosdaqVsColOffset = 5;
-    nStockColOffset = 6;
+    nKospiVsDayColOffset = 4;
+    nKosdaqVsDayColOffset = 5;
+    nKospiVsSumColOffset = 6;
+    nKosdaqVsSumColOffset = 7;
+    nStockColOffset = 8;
     nRoundUp = 3;
 
     stTitleBoldFormat = gstWorkBook.add_format({'bold': True, 'font_color': 'blue'});
@@ -892,10 +919,13 @@ def EXCEL_SetGraphXlsxData(nMaxDateCount, nMaxStockCount):
         stString = "=IFERROR(AVERAGE(" + stStartTransCell + ":" + stEndTransCell + "), \"\")";
         gstGraphSheet.write(nDateRowOffset, nAvgStockColOffset, stString, stRateFormat);
 
+    # KOSPI 승리
+    EXCEL_PrintWinningDayRate(nGraphRowOffset, nKospiVsDayColOffset, u"KOSPI", nMaxDateCount);
+    EXCEL_PrintWinningDayRate(nGraphRowOffset, nKosdaqVsDayColOffset, u"KOSDAQ", nMaxDateCount);
 
     # KOSPI 누적승리
-    EXCEL_PrintWinningRate(nGraphRowOffset, nKospiVsColOffset, u"KOSPI", nMaxDateCount);
-    EXCEL_PrintWinningRate(nGraphRowOffset, nKosdaqVsColOffset, u"KOSDAQ", nMaxDateCount);
+    EXCEL_PrintWinningSumRate(nGraphRowOffset, nKospiVsSumColOffset, u"KOSPI", nMaxDateCount);
+    EXCEL_PrintWinningSumRate(nGraphRowOffset, nKosdaqVsSumColOffset, u"KOSDAQ", nMaxDateCount);
 
     # 선정 종목 (그래프 취합 100개 제한)
     nStockCount = nMaxStockCount;
@@ -921,12 +951,12 @@ def EXCEL_SetGraphXlsxData(nMaxDateCount, nMaxStockCount):
 
                 # 년도별 누적 승리율 출력
                 if (nRowOffset == 2) and (nStockIndex < 6):
-                    if (nStockIndex == 0): stString = "=IFERROR(ROUNDUP(INDIRECT(ADDRESS(MATCH(\"11-04-01\", A" + str(nStartFnRowOffset+1) + ":A" + str(stMaxRowOffset) + ", 0)+" + str(nStartFnRowOffset) + "," + str(nKospiVsColOffset+1) + "))," + str(nRoundUp) + "),\"\")";
-                    if (nStockIndex == 1): stString = "=IFERROR(ROUNDUP(INDIRECT(ADDRESS(MATCH(\"12-04-02\", A" + str(nStartFnRowOffset+1) + ":A" + str(stMaxRowOffset) + ", 0)+" + str(nStartFnRowOffset) + "," + str(nKospiVsColOffset+1) + "))," + str(nRoundUp) + "),\"\")";
-                    if (nStockIndex == 2): stString = "=IFERROR(ROUNDUP(INDIRECT(ADDRESS(MATCH(\"13-04-01\", A" + str(nStartFnRowOffset+1) + ":A" + str(stMaxRowOffset) + ", 0)+" + str(nStartFnRowOffset) + "," + str(nKospiVsColOffset+1) + "))," + str(nRoundUp) + "),\"\")";
-                    if (nStockIndex == 3): stString = "=IFERROR(ROUNDUP(INDIRECT(ADDRESS(MATCH(\"14-04-01\", A" + str(nStartFnRowOffset+1) + ":A" + str(stMaxRowOffset) + ", 0)+" + str(nStartFnRowOffset) + "," + str(nKospiVsColOffset+1) + "))," + str(nRoundUp) + "),\"\")";
-                    if (nStockIndex == 4): stString = "=IFERROR(ROUNDUP(INDIRECT(ADDRESS(MATCH(\"15-04-01\", A" + str(nStartFnRowOffset+1) + ":A" + str(stMaxRowOffset) + ", 0)+" + str(nStartFnRowOffset) + "," + str(nKospiVsColOffset+1) + "))," + str(nRoundUp) + "),\"\")";
-                    if (nStockIndex == 5): stString = "=IFERROR(ROUNDUP(INDIRECT(ADDRESS(" + str(stMaxRowOffset) + "," + str(nKospiVsColOffset+1) + "))," + str(nRoundUp) + "),\"\")";
+                    if (nStockIndex == 0): stString = "=IFERROR(ROUNDUP(INDIRECT(ADDRESS(MATCH(\"11-04-01\", A" + str(nStartFnRowOffset+1) + ":A" + str(stMaxRowOffset) + ", 0)+" + str(nStartFnRowOffset) + "," + str(nKospiVsSumColOffset+1) + "))," + str(nRoundUp) + "),\"\")";
+                    if (nStockIndex == 1): stString = "=IFERROR(ROUNDUP(INDIRECT(ADDRESS(MATCH(\"12-04-02\", A" + str(nStartFnRowOffset+1) + ":A" + str(stMaxRowOffset) + ", 0)+" + str(nStartFnRowOffset) + "," + str(nKospiVsSumColOffset+1) + "))," + str(nRoundUp) + "),\"\")";
+                    if (nStockIndex == 2): stString = "=IFERROR(ROUNDUP(INDIRECT(ADDRESS(MATCH(\"13-04-01\", A" + str(nStartFnRowOffset+1) + ":A" + str(stMaxRowOffset) + ", 0)+" + str(nStartFnRowOffset) + "," + str(nKospiVsSumColOffset+1) + "))," + str(nRoundUp) + "),\"\")";
+                    if (nStockIndex == 3): stString = "=IFERROR(ROUNDUP(INDIRECT(ADDRESS(MATCH(\"14-04-01\", A" + str(nStartFnRowOffset+1) + ":A" + str(stMaxRowOffset) + ", 0)+" + str(nStartFnRowOffset) + "," + str(nKospiVsSumColOffset+1) + "))," + str(nRoundUp) + "),\"\")";
+                    if (nStockIndex == 4): stString = "=IFERROR(ROUNDUP(INDIRECT(ADDRESS(MATCH(\"15-04-01\", A" + str(nStartFnRowOffset+1) + ":A" + str(stMaxRowOffset) + ", 0)+" + str(nStartFnRowOffset) + "," + str(nKospiVsSumColOffset+1) + "))," + str(nRoundUp) + "),\"\")";
+                    if (nStockIndex == 5): stString = "=IFERROR(ROUNDUP(INDIRECT(ADDRESS(" + str(stMaxRowOffset) + "," + str(nKospiVsSumColOffset+1) + "))," + str(nRoundUp) + "),\"\")";
                     gstGraphSheet.write(nRowOffset, nStockColOffset + nStockIndex, stString);
 
             # 선정 종목 매핑 정보
@@ -942,33 +972,34 @@ def EXCEL_SetGraphXlsxData(nMaxDateCount, nMaxStockCount):
     stChart = gstWorkBook.add_chart({'type':'line'});
     stGraphCell = xl_rowcol_to_cell(nStartGraphRowOffset, nStockColOffset);
 
-    stStartTransCell = xl_rowcol_to_cell(nStartGraphRowOffset, nKospiVsColOffset);
-    stEndTransCell = xl_rowcol_to_cell(nMaxRowOffset - 1, nKospiVsColOffset);
+    stStartTransCell = xl_rowcol_to_cell(nStartGraphRowOffset, nKospiVsSumColOffset);
+    stEndTransCell = xl_rowcol_to_cell(nMaxRowOffset - 1, nKospiVsSumColOffset);
     stKospiData = '=' + gstGraphSheetName + '!' + stStartTransCell + ":" + stEndTransCell;
 
-    stStartTransCell = xl_rowcol_to_cell(nStartGraphRowOffset, nKosdaqVsColOffset);
-    stEndTransCell = xl_rowcol_to_cell(nMaxRowOffset - 1, nKosdaqVsColOffset);
+    stStartTransCell = xl_rowcol_to_cell(nStartGraphRowOffset, nKosdaqVsSumColOffset);
+    stEndTransCell = xl_rowcol_to_cell(nMaxRowOffset - 1, nKosdaqVsSumColOffset);
     stKosdaqData = '=' + gstGraphSheetName + '!' + stStartTransCell + ":" + stEndTransCell;
 
     stStartDateCell = xl_rowcol_to_cell(nStartGraphRowOffset, nDateColOffset);
     stEndDateCell = xl_rowcol_to_cell(nMaxRowOffset - 1, nDateColOffset);
     stDate = '=' + gstGraphSheetName + '!' + stStartDateCell + ":" + stEndDateCell;
 
-    stTitle = xl_rowcol_to_cell(1, nKospiVsColOffset);
-    stChart.set_title({'name':u"KOSPI / KOSDAQ 대비 누적 승리율"});
+    stTitle = xl_rowcol_to_cell(1, nKospiVsSumColOffset);
+    stChart.set_title({'name':u"누적 승리율"});
     stChart.set_x_axis({'name':u'날짜'});
     stChart.set_y_axis({'name':u'승리율(%)', 'min':0, 'max':200, 'major_unit':10});
 
     stChart.add_series({'name':u"KOSPI",  'categories':stDate, 'text_axis':True, 'values':stKospiData});
     stChart.add_series({'name':u"KOSDAQ", 'categories':stDate, 'text_axis':True, 'values':stKosdaqData});
+    stChart.show_hidden_data();
 
-    stChart.set_size({'width':720, 'height':504});
+    stChart.set_size({'width':1080, 'height':720});
     gstGraphSheet.insert_chart(stGraphCell, stChart);
 
 
     # KOSPI / KOSDAQ 지수
     stChart = gstWorkBook.add_chart({'type':'line'});
-    stGraphCell = xl_rowcol_to_cell(nStartGraphRowOffset + 25, nStockColOffset);
+    stGraphCell = xl_rowcol_to_cell(nStartGraphRowOffset + 36, nStockColOffset);
 
     stStartTransCell = xl_rowcol_to_cell(nStartGraphRowOffset, nKospiOffset);
     stEndTransCell = xl_rowcol_to_cell(nMaxRowOffset - 1, nKospiOffset);
@@ -978,16 +1009,17 @@ def EXCEL_SetGraphXlsxData(nMaxDateCount, nMaxStockCount):
     stEndTransCell = xl_rowcol_to_cell(nMaxRowOffset - 1, nKosdaqOffset);
     stKosdaqSise = '=' + gstSiseSheetName + '!' + stStartTransCell + ":" + stEndTransCell;
 
-    stTitle = xl_rowcol_to_cell(1, nKospiVsColOffset);
-    stChart.set_title({'name':u"KOSPI / KOSDAQ 지수"});
+    stTitle = xl_rowcol_to_cell(1, nKospiVsSumColOffset);
+    stChart.set_title({'name':u"지수"});
     stChart.set_x_axis({'name':u'날짜'});
     stChart.set_y_axis({'name':u'KOSPI지수',   'num_format':'0'});
     stChart.set_y2_axis({'name':u'KOSDAQ지수', 'num_format':'0'});
 
     stChart.add_series({'name':u"KOSPI",  'categories':stDate, 'values':stKospiSise});
     stChart.add_series({'name':u"KOSDAQ", 'categories':stDate, 'values':stKosdaqSise, 'y2_axis':1});
+    stChart.show_hidden_data();
 
-    stChart.set_size({'width':770, 'height':504});
+    stChart.set_size({'width':1080, 'height':504});
     gstGraphSheet.insert_chart(stGraphCell, stChart);
 
 def EXCEL_WriteExcelFile(astKospiInfor, astKosdaqInfor, astStockInfor):
@@ -1213,8 +1245,9 @@ gstFnSheet.freeze_panes('D3');
 gstFnSheet.set_column('A:A', None, None, {'hidden': 1});
 gstSiseSheet.freeze_panes('F4');
 gstSiseSheet.set_row(0, None, None, {'hidden': True})
-gstGraphSheet.freeze_panes('G4');
+gstGraphSheet.freeze_panes('I4');
 gstGraphSheet.set_row(0, None, None, {'hidden': True})
+gstGraphSheet.set_column('B:H', None, None, {'hidden': True})
 
 PrintProgress(u"[시작] 엑셀 출력");
 gstWorkBook.close();
