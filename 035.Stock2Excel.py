@@ -1160,7 +1160,7 @@ def EXCEL_SetBenefitGraphXlsxData(nMaxDateCount, nMaxStockCount):
                 gstBenefitSheet.write(nRowOffset, nStockColOffset + nStockIndex, stString);
 
     # 차트 출력
-    # 누적 승리율
+    # 누적 수익율
     stChart = gstWorkBook.add_chart({'type':'line'});
     stGraphCell = xl_rowcol_to_cell(nStartGraphRowOffset, nStockColOffset);
 
@@ -1174,7 +1174,7 @@ def EXCEL_SetBenefitGraphXlsxData(nMaxDateCount, nMaxStockCount):
 
     stChart.set_title({'name':u"매입 시점 수익율"});
     stChart.set_x_axis({'name':u'날짜'});
-    stChart.set_y_axis({'name':u'수익율(%)', 'min':0, 'max':200, 'major_unit':10});
+    stChart.set_y_axis({'name':u'수익율(%)', 'min':-10, 'max':400, 'major_unit':10});
 
     stChart.add_series({'name':u"", 'categories':stDate, 'text_axis':True, 'values':stKospiData});
     stChart.show_hidden_data();
@@ -1423,6 +1423,7 @@ gstWinningSheet.set_row(0, None, None, {'hidden': True})
 gstWinningSheet.set_column('B:H', None, None, {'hidden': True})
 gstBenefitSheet.freeze_panes('C4');
 gstBenefitSheet.set_row(0, None, None, {'hidden': True})
+gstBenefitSheet.set_column('B:B', None, None, {'hidden': True})
 
 PrintProgress(u"[시작] 엑셀 출력");
 gstWorkBook.close();
