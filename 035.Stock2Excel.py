@@ -1052,7 +1052,7 @@ def EXCEL_SetBenefitGraphXlsxData(nMaxDateCount, nMaxStockCount):
 
     stTitleBoldFormat = gstWorkBook.add_format({'bold': True, 'font_color': 'blue'});
     stRedTitleBoldFormat = gstWorkBook.add_format({'bold': True, 'font_color': 'red'});
-    stChoiceDateFormat = gstWorkBook.add_format({'text_wrap': True, 'font_color': 'blue'});
+    stChoiceDateFormat = gstWorkBook.add_format({'num_format': '@', 'font_color': 'blue'});
     stRedTitleFormat = gstWorkBook.add_format({'font_color': 'red'});
     stGreenTitleFormat = gstWorkBook.add_format({'font_color': 'green'});
     stPurpleBoldFormat = gstWorkBook.add_format({'bold': True, 'font_color': 'purple'});
