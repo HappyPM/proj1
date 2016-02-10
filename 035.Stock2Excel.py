@@ -1080,9 +1080,6 @@ def EXCEL_SetBenefitGraphXlsxData(nMaxDateCount, nMaxStockCount):
     gstBenefitSheet.write(nGraphRowOffset, nAvgStockColOffset, u"시점 수익", stNavyFormat);
     gstBenefitSheet.write(nGraphRowOffset + 1, nAvgStockColOffset, u"", stGreenTitleFormat);
     for nDateIndex in range(nMaxDateCount):
-        if (nDateIndex == 0):
-            continue;
-
         nDateRowOffset = nDateIndex + nStartGraphRowOffset;
         stStartTransCell = xl_rowcol_to_cell(nDateRowOffset, nStockColOffset);
         stEndTransCell = xl_rowcol_to_cell(nDateRowOffset, nStockColOffset + nMaxStockCount - 1);
