@@ -1024,9 +1024,14 @@ def EXCEL_SetWinningRateGraphXlsxData(nMaxDateCount, nMaxStockCount):
     gstWinningSheet.insert_chart(stGraphCell, stChart);
 
 def EXCEL_SetBenefitGraphXlsxData(nMaxDateCount, nMaxStockCount):
+    nStockChoiceRowOffset = 0;
+    nDateRowOffset = 1;
+    nChoiceDateRowOffset = 2;
     nStartGraphRowOffset = 3;
+    stChoiceDateCell = 'A3';
     nMaxRowOffset = nMaxDateCount + nStartGraphRowOffset;
     stMaxRowOffset = str(nMaxRowOffset);
+    stChoiceDate = u'16-01-04';
 
     nStartFnRowOffset = 3;
     nEndFnRowOffset = nStartFnRowOffset + nMaxStockCount - 1;
@@ -1034,18 +1039,20 @@ def EXCEL_SetBenefitGraphXlsxData(nMaxDateCount, nMaxStockCount):
     stEndFnRowOffset = str(nEndFnRowOffset);
 
     stSiseCell = gstSiseSheetName + u'!';
-    nStockChoiceRowOffset = 0;
     nGraphRowOffset = 1;
     nRowOffset = 0;
 
     nDateColOffset = 0;
     nAvgStockColOffset = 1;
-    nStockColOffset = 2;
+    nChoiceDateColOffset = 2;
+    nBuyCurColOffset = 3;
+    nStockColOffset = 4;
     nRoundUp = 3;
+    stBaseTransCell = xl_rowcol_to_cell(nGraphRowOffset + 1, nChoiceDateColOffset);
 
     stTitleBoldFormat = gstWorkBook.add_format({'bold': True, 'font_color': 'blue'});
     stRedTitleBoldFormat = gstWorkBook.add_format({'bold': True, 'font_color': 'red'});
-    stTitleFormat = gstWorkBook.add_format({'font_color': 'blue'});
+    stChoiceDateFormat = gstWorkBook.add_format({'text_wrap': True, 'font_color': 'blue'});
     stRedTitleFormat = gstWorkBook.add_format({'font_color': 'red'});
     stGreenTitleFormat = gstWorkBook.add_format({'font_color': 'green'});
     stPurpleBoldFormat = gstWorkBook.add_format({'bold': True, 'font_color': 'purple'});
@@ -1062,13 +1069,15 @@ def EXCEL_SetBenefitGraphXlsxData(nMaxDateCount, nMaxStockCount):
 
         if (nRowOffset == nStockChoiceRowOffset):   # 0
             continue;
-        elif (nRowOffset < nStartGraphRowOffset):      # 0 or 1
+        elif (nRowOffset == nDateRowOffset):        # 1
             gstBenefitSheet.write(nRowOffset, nDateColOffset, stDateString, stPurpleBoldFormat);
-        else:                                       # > 1
+        elif (nRowOffset == nChoiceDateRowOffset):  # 2
+            gstBenefitSheet.write(nRowOffset, nDateColOffset, stChoiceDate, stChoiceDateFormat);
+        else:                                       # >= 3
             gstBenefitSheet.write(nRowOffset, nDateColOffset, stDateString, stPurpleFormat);
 
     # 매입 시점별 수익률 증감
-    gstBenefitSheet.write(nGraphRowOffset, nAvgStockColOffset, u"평균 수익", stNavyFormat);
+    gstBenefitSheet.write(nGraphRowOffset, nAvgStockColOffset, u"시점 수익", stNavyFormat);
     gstBenefitSheet.write(nGraphRowOffset + 1, nAvgStockColOffset, u"", stGreenTitleFormat);
     for nDateIndex in range(nMaxDateCount):
         if (nDateIndex == 0):
@@ -1087,7 +1096,7 @@ def EXCEL_SetBenefitGraphXlsxData(nMaxDateCount, nMaxStockCount):
             stCurTransCell = xl_rowcol_to_cell(nDateRowOffset, nStockColOffset + nStockIndex);
             stString += "IFERROR(" + stMaxTransCell + " * 100 / " + stCurTransCell + ", 0)";
             if (nStockIndex < gnMaxGraphStockCount - 1):
-                stString += "+ ";
+                stString += " + ";
         stString += ") / ";
         stString += "COUNT(" + stStartTransCell + ":" + stEndTransCell + ")";
         stString += "- 100";
@@ -1095,6 +1104,50 @@ def EXCEL_SetBenefitGraphXlsxData(nMaxDateCount, nMaxStockCount):
         
         stString += ", \"\")";
         gstBenefitSheet.write(nDateRowOffset, nAvgStockColOffset, stString, stRateFormat);
+
+    # 선정 날짜 기준 현재 수익률 동작 여부
+    stString = "=IFERROR(MATCH(" + stChoiceDateCell + ", A" + str(nStartFnRowOffset+1) + ":A" + str(stMaxRowOffset) + ", 0) + 3";
+    stString += ", 0)";
+    gstBenefitSheet.write(nGraphRowOffset, nChoiceDateColOffset, u"선정 날짜", stGrayFormat);
+    gstBenefitSheet.write(nGraphRowOffset + 1, nChoiceDateColOffset, stString, stGrayFormat);
+    for nDateIndex in range(nMaxDateCount):
+        nDateRowOffset = nDateIndex + nStartGraphRowOffset;
+        stCurDateTransCell = xl_rowcol_to_cell(nDateRowOffset, nDateColOffset);
+        stChoiceDateTransCell = xl_rowcol_to_cell(nChoiceDateRowOffset, nDateColOffset);
+
+        stString = "=IF(AND(";
+        stString += stCurDateTransCell + " >= " + stChoiceDateTransCell;
+        stString += ", " + stBaseTransCell + " > 0";
+        stString += "), 1, 0)";
+
+        gstBenefitSheet.write(nDateRowOffset, nChoiceDateColOffset, stString);
+
+    # 선정 날짜 기준 현재 수익률
+    gstBenefitSheet.write(nGraphRowOffset, nBuyCurColOffset, u"현재 수익", stNavyFormat);
+    gstBenefitSheet.write(nGraphRowOffset + 1, nBuyCurColOffset, u"", stGreenTitleFormat);
+    for nDateIndex in range(nMaxDateCount):
+        nDateRowOffset = nDateIndex + nStartGraphRowOffset;
+        stStartTransCell = xl_rowcol_to_cell(nDateRowOffset, nStockColOffset);
+        stEndTransCell = xl_rowcol_to_cell(nDateRowOffset, nStockColOffset + nMaxStockCount - 1);
+        stTransCellAgo = xl_rowcol_to_cell(nDateRowOffset - 1, nBuyCurColOffset);
+        stChoiceDateTransCell = xl_rowcol_to_cell(nDateRowOffset, nChoiceDateColOffset);
+
+        stString = "=IFERROR(";
+        stString += "IF(AND(COUNT(" + stStartTransCell + ":" + stEndTransCell + ") > 0, " + stChoiceDateTransCell + " > 0, " + stBaseTransCell + " > 0), ";
+        stString += "(";
+        for nStockIndex in range (gnMaxGraphStockCount):
+            stBaseAddrTransCell = "INDIRECT(ADDRESS(" + stBaseTransCell + ", " + str(nStockColOffset + nStockIndex + 1) + "))";
+            stCurTransCell = xl_rowcol_to_cell(nDateRowOffset, nStockColOffset + nStockIndex);
+            stString += "IFERROR(" + stCurTransCell + " * 100 / " + stBaseAddrTransCell + ", 0)";
+            if (nStockIndex < gnMaxGraphStockCount - 1):
+                stString += " + ";
+        stString += ") / ";
+        stString += "COUNT(" + stStartTransCell + ":" + stEndTransCell + ")";
+        stString += " - 100";
+        stString += ", " + stTransCellAgo + ")";    # IF 문 종료
+
+        stString += ", \"\")";
+        gstBenefitSheet.write(nDateRowOffset, nBuyCurColOffset, stString, stRateFormat);
 
     # 선정 종목 (그래프 취합 100개 제한)
     nStockCount = nMaxStockCount;
@@ -1166,17 +1219,22 @@ def EXCEL_SetBenefitGraphXlsxData(nMaxDateCount, nMaxStockCount):
 
     stStartTransCell = xl_rowcol_to_cell(nStartGraphRowOffset, nAvgStockColOffset);
     stEndTransCell = xl_rowcol_to_cell(nMaxRowOffset - 1, nAvgStockColOffset);
-    stKospiData = '=' + gstBenefitSheetName + '!' + stStartTransCell + ":" + stEndTransCell;
+    stBuyTimeData = '=' + gstBenefitSheetName + '!' + stStartTransCell + ":" + stEndTransCell;
+
+    stStartTransCell = xl_rowcol_to_cell(nStartGraphRowOffset, nBuyCurColOffset);
+    stEndTransCell = xl_rowcol_to_cell(nMaxRowOffset - 1, nBuyCurColOffset);
+    stBuyAfterData = '=' + gstBenefitSheetName + '!' + stStartTransCell + ":" + stEndTransCell;
 
     stStartDateCell = xl_rowcol_to_cell(nStartGraphRowOffset, nDateColOffset);
     stEndDateCell = xl_rowcol_to_cell(nMaxRowOffset - 1, nDateColOffset);
     stDate = '=' + gstBenefitSheetName + '!' + stStartDateCell + ":" + stEndDateCell;
 
-    stChart.set_title({'name':u"매입 시점 수익율"});
+    stChart.set_title({'name':u"누적 수익율"});
     stChart.set_x_axis({'name':u'날짜'});
     stChart.set_y_axis({'name':u'수익율(%)', 'min':-10, 'max':400, 'major_unit':10});
 
-    stChart.add_series({'name':u"", 'categories':stDate, 'text_axis':True, 'values':stKospiData});
+    stChart.add_series({'name':u"매입 시점 수익률", 'categories':stDate, 'text_axis':True, 'values':stBuyTimeData});
+    stChart.add_series({'name':u"매입 이후 수익률", 'categories':stDate, 'text_axis':True, 'values':stBuyAfterData});
     stChart.show_hidden_data();
 
     stChart.set_size({'width':1080, 'height':720});
@@ -1421,9 +1479,9 @@ gstSiseSheet.set_row(0, None, None, {'hidden': True})
 gstWinningSheet.freeze_panes('I4');
 gstWinningSheet.set_row(0, None, None, {'hidden': True})
 gstWinningSheet.set_column('B:H', None, None, {'hidden': True})
-gstBenefitSheet.freeze_panes('C4');
+gstBenefitSheet.freeze_panes('E4');
 gstBenefitSheet.set_row(0, None, None, {'hidden': True})
-gstBenefitSheet.set_column('B:B', None, None, {'hidden': True})
+gstBenefitSheet.set_column('B:D', None, None, {'hidden': True})
 
 PrintProgress(u"[시작] 엑셀 출력");
 gstWorkBook.close();
