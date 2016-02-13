@@ -1165,21 +1165,11 @@ def EXCEL_SetBenefitGraphXlsxData(nMaxDateCount, nMaxStockCount):
             stString += " > 0, ";
             stString += "INDIRECT(ADDRESS(" + stSiseRowOffset + ", " + stTransCell + "+1, ";
             stString += "4, 5, \"" + gstSiseSheetName + "\")), ";
-            stString += "IF(" + stTransCellAgo + " > 0, " + stTransCellAgo + ", " + stTransCellAfter + "))";  #IF
+            stString += "IF(" + stTransCellAfter + " > 0, " + stTransCellAfter + ", " + "\"\"))";  #IF
             stString += ", \"\")";  #IFERROR
 
             # 일반 선정 종목 증감율 값
             if (nRowOffset >= nStartGraphRowOffset):
-                if (nRowOffset == nStartGraphRowOffset):
-                    stString = "=IFERROR(";
-                    stString += "IF(";
-                    stString += "INDIRECT(ADDRESS(" + stSiseRowOffset + ", " + stTransCell + "+1, ";
-                    stString += "4, 5, \"" + gstSiseSheetName + "\"))";
-                    stString += " > 0, ";
-                    stString += "INDIRECT(ADDRESS(" + stSiseRowOffset + ", " + stTransCell + "+1, ";
-                    stString += "4, 5, \"" + gstSiseSheetName + "\")), ";
-                    stString += "IF(" + stTransCellAfter + " > 0, " + stTransCellAfter + ", " + "\"\"))";  #IF
-                    stString += ", \"\")";  #IFERROR
                 gstBenefitSheet.write(nRowOffset, nStockColOffset + nStockIndex, stString);
             # 선정 종목 Title
             elif (nRowOffset >= nGraphRowOffset):
