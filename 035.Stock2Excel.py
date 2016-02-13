@@ -1155,6 +1155,7 @@ def EXCEL_SetBenefitGraphXlsxData(nMaxDateCount, nMaxStockCount):
             stStockColOffset = str(nStockIndex + 1);
             stSiseRowOffset = str(nRowOffset + 1);
             stTransCellAgo = xl_rowcol_to_cell(nRowOffset - 1, nStockColOffset + nStockIndex);
+            stTransCellAfter = xl_rowcol_to_cell(nRowOffset + 1, nStockColOffset + nStockIndex);
 
             stTransCell = xl_rowcol_to_cell(0, nStockColOffset + nStockIndex);
             stString = "=IFERROR(";
@@ -1164,7 +1165,7 @@ def EXCEL_SetBenefitGraphXlsxData(nMaxDateCount, nMaxStockCount):
             stString += " > 0, ";
             stString += "INDIRECT(ADDRESS(" + stSiseRowOffset + ", " + stTransCell + "+1, ";
             stString += "4, 5, \"" + gstSiseSheetName + "\")), ";
-            stString += "IF(" + stTransCellAgo + " > 0, " + stTransCellAgo + ", \"\"))";  #IF
+            stString += "IF(" + stTransCellAgo + " > 0, " + stTransCellAgo + ", " + stTransCellAfter + "))";  #IF
             stString += ", \"\")";  #IFERROR
 
             # 일반 선정 종목 증감율 값
@@ -1177,7 +1178,7 @@ def EXCEL_SetBenefitGraphXlsxData(nMaxDateCount, nMaxStockCount):
                     stString += " > 0, ";
                     stString += "INDIRECT(ADDRESS(" + stSiseRowOffset + ", " + stTransCell + "+1, ";
                     stString += "4, 5, \"" + gstSiseSheetName + "\")), ";
-                    stString += "\"\")";  #IF
+                    stString += "IF(" + stTransCellAfter + " > 0, " + stTransCellAfter + ", " + "\"\"))";  #IF
                     stString += ", \"\")";  #IFERROR
                 gstBenefitSheet.write(nRowOffset, nStockColOffset + nStockIndex, stString);
             # 선정 종목 Title
