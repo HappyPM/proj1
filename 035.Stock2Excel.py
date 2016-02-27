@@ -833,7 +833,6 @@ def EXCEL_PrintWinningDayRate(nRowOffset, nColOffset, nTitle, nMaxDateCount):
 
 # 누적승리 출력
 def EXCEL_PrintWinningSumRate(nRowOffset, nColOffset, nTitle, nMaxDateCount):
-    nBaseColOffset = 3;
     stTitleBoldFormat = gstWorkBook.add_format({'bold': True, 'font_color': 'blue'});
     stRedTitleBoldFormat = gstWorkBook.add_format({'bold': True, 'font_color': 'red'});
     stRateFormat = gstWorkBook.add_format({'num_format':'0.000'});
@@ -847,13 +846,9 @@ def EXCEL_PrintWinningSumRate(nRowOffset, nColOffset, nTitle, nMaxDateCount):
         nDateRowOffset = nDateIndex + (nRowOffset + 2);
 
         stAccumulatedCell = xl_rowcol_to_cell(nDateRowOffset - 1, nColOffset);
-        if (nTitle == u"KOSPI"):
-            stAvgStockRate = xl_rowcol_to_cell(nDateRowOffset, nColOffset - (nBaseColOffset + 0));
-        else:
-            stAvgStockRate = xl_rowcol_to_cell(nDateRowOffset, nColOffset - (nBaseColOffset + 1));
-        stKospiRate = xl_rowcol_to_cell(nDateRowOffset, nColOffset - (nBaseColOffset + 2));
+        stTodayRate = xl_rowcol_to_cell(nDateRowOffset, nColOffset - 2);
 
-        stString = "=IFERROR(" + stAccumulatedCell + " + (" + stAvgStockRate + " - " + stKospiRate + "), \"\")";
+        stString = "=IFERROR(" + stAccumulatedCell + " + " + stTodayRate + ", \"\")";
 
         gstWinningSheet.write(nDateRowOffset, nColOffset, stString, stRateFormat);
 
@@ -1410,7 +1405,6 @@ def COMPANY_GetStockCode(astStockList): # OUT (gastChangeStockNameCodeList: 종�
         PrintProgress(u"[시작] " + astrStockType[nStockType] + u" List 취합");
 
         nMaxPage = COMPANY_GetNaverStockPageCount(nStockType);
-        nMaxPage = 1;
 
         for nPageIndex in range(1, nMaxPage + 1):
             strUrl = nUrl + strType + str(nStockType) + strPage + str(nPageIndex);
