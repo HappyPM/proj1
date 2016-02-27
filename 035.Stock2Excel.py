@@ -424,6 +424,12 @@ def EXCEL_SetFnXlsxTitle(astStockInfor):
     gstFnSheet.write(nRowOffset, nColOffset, u"종목매핑", stPurpleFormat);
     nColOffset = nColOffset + 1;
 
+    gstFnSheet.write(nRowOffset, nColOffset, u"이름매칭", stChoiceFormat);
+    stStartCell = xl_rowcol_to_cell(2, nColOffset);
+    stEndCell = xl_rowcol_to_cell(2 + nStockLen - 1, nColOffset);
+    gstFnSheet.write(nRowOffset + 1, nColOffset, "=count(" + stStartCell + ":" + stEndCell + ")", stChoiceFormat);
+    nColOffset = nColOffset + 1;
+
     gstFnSheet.write(nRowOffset, nColOffset, u"종목선정", stChoiceFormat);
     stStartCell = xl_rowcol_to_cell(2, nColOffset);
     stEndCell = xl_rowcol_to_cell(2 + nStockLen - 1, nColOffset);
@@ -535,15 +541,27 @@ def EXCEL_SetSiseXlsxTitle(astStockInfor):
 
 def EXCEL_SetFnXlsxMapping(nRowOffset, nColOffset):
     nStartRow = 3;
-    nEndRow = gnMaxBaeDangStockCount + nStartRow - 1;
-    stStockChoiceLocation = u'B';
-    stStockNameLocation = u'C';
+    stNameChoiceLocation = u'B';
+    stStockChoiceLocation = u'C';
     nTargetRowOffset = nRowOffset + 1;
 
     stString = u'';
-    stString = stString + u'=IF(ISNUMBER(' + stStockChoiceLocation + str(nTargetRowOffset) + u'),';
-    stString = stString + u'count(' + stStockChoiceLocation + str(nStartRow) + u':' + stStockChoiceLocation + str(nTargetRowOffset) + u'),';
-    stString = stString + u'IFERROR(MATCH(' + stStockNameLocation + str(nTargetRowOffset) + u',' + stStockChoiceLocation + str(nStartRow) + u':' + stStockChoiceLocation + str(nEndRow) + u',0), \"\"))';
+    stString = stString + u'=IF(ISNUMBER(' + stNameChoiceLocation + str(nTargetRowOffset) + u'),';
+    stString = stString + u'COUNT(' + stNameChoiceLocation + str(nStartRow) + u':' + stStockChoiceLocation + str(nTargetRowOffset) + u'), ';
+    stString = stString + u'IF(ISNUMBER(' + stStockChoiceLocation + str(nTargetRowOffset) + u'),';
+    stString = stString + u'COUNT(' + stNameChoiceLocation + str(nStartRow) + u':' + stStockChoiceLocation + str(nTargetRowOffset) + u'), ';
+    stString = stString + u'\"\"))';
+    gstFnSheet.write(nRowOffset, nColOffset, stString);
+
+def EXCEL_SetFnNameMapping(nRowOffset, nColOffset):
+    nStartRow = 3;
+    nEndRow = gnMaxBaeDangStockCount + nStartRow - 1;
+    stStockChoiceLocation = u'C';
+    stStockNameLocation = u'D';
+    nTargetRowOffset = nRowOffset + 1;
+
+    stString = u'';
+    stString = stString + u'=IFERROR(MATCH(' + stStockNameLocation + str(nTargetRowOffset) + u',' + stStockChoiceLocation + str(nStartRow) + u':' + stStockChoiceLocation + str(nEndRow) + u',0), \"\")';
     gstFnSheet.write(nRowOffset, nColOffset, stString);
 
 def EXCEL_SetFnXlsxData(nRowOffset, astStockInfor, nStockIndex):
@@ -563,6 +581,10 @@ def EXCEL_SetFnXlsxData(nRowOffset, astStockInfor, nStockIndex):
 
     # 종목매핑
     EXCEL_SetFnXlsxMapping(nRowOffset, nColOffset);
+    nColOffset = nColOffset + 1;
+
+    # 이름매핑
+    EXCEL_SetFnNameMapping(nRowOffset, nColOffset);
     nColOffset = nColOffset + 1;
 
     # 종목선정
@@ -964,7 +986,7 @@ def EXCEL_SetWinningRateGraphXlsxData(nMaxDateCount, nMaxStockCount):
             else:
                 stString = "=IFERROR(";
                 stString += "INDIRECT(ADDRESS(2 + MATCH(" + stStockColOffset + ", ";
-                stString += gstFnSheetName + "!$A$" + stStartFnRowOffset + ":$A$" + stEndFnRowOffset + ", 0), 5, 4, 5, \"" + gstFnSheetName + "\"))";
+                stString += gstFnSheetName + "!$A$" + stStartFnRowOffset + ":$A$" + stEndFnRowOffset + ", 0), 6, 4, 5, \"" + gstFnSheetName + "\"))";
                 stString += ", \"\")";
                 gstWinningSheet.write(nRowOffset, nStockColOffset + nStockIndex, stString);
 
@@ -1196,7 +1218,7 @@ def EXCEL_SetBenefitGraphXlsxData(nMaxDateCount, nMaxStockCount):
             else:
                 stString = "=IFERROR(";
                 stString += "INDIRECT(ADDRESS(2 + MATCH(" + stStockColOffset + ", ";
-                stString += gstFnSheetName + "!$A$" + stStartFnRowOffset + ":$A$" + stEndFnRowOffset + ", 0), 5, 4, 5, \"" + gstFnSheetName + "\"))";
+                stString += gstFnSheetName + "!$A$" + stStartFnRowOffset + ":$A$" + stEndFnRowOffset + ", 0), 6, 4, 5, \"" + gstFnSheetName + "\"))";
                 stString += ", \"\")";
                 gstBenefitSheet.write(nRowOffset, nStockColOffset + nStockIndex, stString);
 
@@ -1388,6 +1410,7 @@ def COMPANY_GetStockCode(astStockList): # OUT (gastChangeStockNameCodeList: 종�
         PrintProgress(u"[시작] " + astrStockType[nStockType] + u" List 취합");
 
         nMaxPage = COMPANY_GetNaverStockPageCount(nStockType);
+        nMaxPage = 1;
 
         for nPageIndex in range(1, nMaxPage + 1):
             strUrl = nUrl + strType + str(nStockType) + strPage + str(nPageIndex);
@@ -1460,8 +1483,8 @@ gstBenefitSheet     = gstWorkBook.add_worksheet(gstBenefitSheetName);
 gstAutoFilterEndCell = EXCEL_WriteExcelFile(gastKospiInfor, gastKosdaqInfor, gastStockInfor);
 
 gstFnSheet.autofilter(gstAutoFilterStartCell + ':' + gstAutoFilterEndCell);
-gstFnSheet.freeze_panes('D3');
-gstFnSheet.set_column('A:A', None, None, {'hidden': 1});
+gstFnSheet.freeze_panes('E3');
+gstFnSheet.set_column('A:B', None, None, {'hidden': 1});
 gstSiseSheet.freeze_panes('F4');
 gstSiseSheet.set_row(0, None, None, {'hidden': True})
 gstWinningSheet.freeze_panes('I4');
