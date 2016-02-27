@@ -833,6 +833,7 @@ def EXCEL_PrintWinningDayRate(nRowOffset, nColOffset, nTitle, nMaxDateCount):
 
 # 누적승리 출력
 def EXCEL_PrintWinningSumRate(nRowOffset, nColOffset, nTitle, nMaxDateCount):
+    nChoiceDateColOffset = 0;
     stTitleBoldFormat = gstWorkBook.add_format({'bold': True, 'font_color': 'blue'});
     stRedTitleBoldFormat = gstWorkBook.add_format({'bold': True, 'font_color': 'red'});
     stRateFormat = gstWorkBook.add_format({'num_format':'0.000'});
@@ -845,10 +846,11 @@ def EXCEL_PrintWinningSumRate(nRowOffset, nColOffset, nTitle, nMaxDateCount):
 
         nDateRowOffset = nDateIndex + (nRowOffset + 2);
 
+        stDateChoiceCell = xl_rowcol_to_cell(nDateRowOffset, nChoiceDateColOffset);
         stAccumulatedCell = xl_rowcol_to_cell(nDateRowOffset - 1, nColOffset);
         stTodayRate = xl_rowcol_to_cell(nDateRowOffset, nColOffset - 2);
 
-        stString = "=IFERROR(" + stAccumulatedCell + " + " + stTodayRate + ", \"\")";
+        stString = "=IF(" + stDateChoiceCell + " > 0, IFERROR(" + stAccumulatedCell + " + " + stTodayRate + ", 0), 0)";
 
         gstWinningSheet.write(nDateRowOffset, nColOffset, stString, stRateFormat);
 
@@ -856,7 +858,12 @@ def EXCEL_SetWinningRateGraphXlsxData(nMaxDateCount, nMaxStockCount):
     nStartGraphRowOffset = 3;
     nMaxRowOffset = nMaxDateCount + nStartGraphRowOffset;
     stMaxRowOffset = str(nMaxRowOffset);
+    stChoiceDate = u'10-05-03';
+    stDateString = 'B';
+    stChoiceDateCell = 'B3';
 
+    nDateRowOffset = 1;
+    nChoiceDateRowOffset = 2;
     nStartFnRowOffset = 3;
     nEndFnRowOffset = nStartFnRowOffset + nMaxStockCount - 1;
     stStartFnRowOffset = str(nStartFnRowOffset);
@@ -870,19 +877,21 @@ def EXCEL_SetWinningRateGraphXlsxData(nMaxDateCount, nMaxStockCount):
     nKospiOffset = 2;
     nKosdaqOffset = 4;
 
-    nDateColOffset = 0;
-    nKospiColOffset = 1;
-    nKosdaqColOffset = 2;
-    nAvgStockColOffset = 3;
-    nKospiVsDayColOffset = 4;
-    nKosdaqVsDayColOffset = 5;
-    nKospiVsSumColOffset = 6;
-    nKosdaqVsSumColOffset = 7;
-    nStockColOffset = 8;
+    nChoiceDateColOffset = 0;
+    nDateColOffset = 1;
+    nKospiColOffset = 2;
+    nKosdaqColOffset = 3;
+    nAvgStockColOffset = 4;
+    nKospiVsDayColOffset = 5;
+    nKosdaqVsDayColOffset = 6;
+    nKospiVsSumColOffset = 7;
+    nKosdaqVsSumColOffset = 8;
+    nStockColOffset = 9;
     nRoundUp = 3;
 
     stTitleBoldFormat = gstWorkBook.add_format({'bold': True, 'font_color': 'blue'});
     stRedTitleBoldFormat = gstWorkBook.add_format({'bold': True, 'font_color': 'red'});
+    stChoiceDateFormat = gstWorkBook.add_format({'num_format': '@', 'font_color': 'blue'});
     stTitleFormat = gstWorkBook.add_format({'font_color': 'blue'});
     stRedTitleFormat = gstWorkBook.add_format({'font_color': 'red'});
     stGreenTitleFormat = gstWorkBook.add_format({'font_color': 'green'});
@@ -892,20 +901,44 @@ def EXCEL_SetWinningRateGraphXlsxData(nMaxDateCount, nMaxStockCount):
     stNavyFormat = gstWorkBook.add_format({'bold': True, 'font_color': 'navy'});
     stRateFormat = gstWorkBook.add_format({'num_format':'0.000'});
 
+    stBaseTransCell = xl_rowcol_to_cell(nGraphRowOffset + 1, nChoiceDateColOffset);
+    
+    # 선정 날짜 기준 현재 수익률 동작 여부
+    stString = "=IFERROR(MATCH(" + stChoiceDateCell + ", " + stDateString + str(nStartFnRowOffset+1) + ":" + stDateString + str(stMaxRowOffset) + ", 0) + 3";
+    stString += ", 0)";
+    gstWinningSheet.write(nGraphRowOffset, nChoiceDateColOffset, u"선정 날짜", stGrayFormat);
+    gstWinningSheet.write(nGraphRowOffset + 1, nChoiceDateColOffset, stString, stGrayFormat);
+    for nDateIndex in range(nMaxDateCount):
+        nDateRowCellOffset = nDateIndex + nStartGraphRowOffset;
+        stCurDateTransCell = xl_rowcol_to_cell(nDateRowCellOffset, nDateColOffset);
+        stChoiceDateTransCell = xl_rowcol_to_cell(nChoiceDateRowOffset, nDateColOffset);
+
+        stString = "=IF(AND(";
+        stString += stCurDateTransCell + " >= " + stChoiceDateTransCell;
+        stString += ", " + stBaseTransCell + " > 0";
+        stString += "), 1, 0)";
+
+        gstWinningSheet.write(nDateRowCellOffset, nChoiceDateColOffset, stString);
+
+    nDateChangeOffset = -1;
+    nKospiChangeOffset = -1;
+    nKosdaqChangeOffset = 0;
     # 날짜 / KOSPI
     for nRowOffset in range(nMaxRowOffset):
-        stTransCell = xl_rowcol_to_cell(nRowOffset, nDateColOffset);
+        stTransCell = xl_rowcol_to_cell(nRowOffset, nDateColOffset + nDateChangeOffset);
         stString = stSiseCell + stTransCell;
-        stDateString = u'=' + "IF(" + stString + " > 0," + stString + ", \"\")";
+        stDateCellString = u'=' + "IF(" + stString + " > 0," + stString + ", \"\")";
 
         if (nRowOffset == nStockChoiceRowOffset):   # 0
             continue;
-        elif (nRowOffset < nStartGraphRowOffset):      # 0 or 1
-            gstWinningSheet.write(nRowOffset, nDateColOffset, stDateString, stPurpleBoldFormat);
-        else:                                       # > 1
-            gstWinningSheet.write(nRowOffset, nDateColOffset, stDateString, stPurpleFormat);
+        elif (nRowOffset == nDateRowOffset):        # 1
+            gstWinningSheet.write(nRowOffset, nDateColOffset, stDateCellString, stPurpleBoldFormat);
+        elif (nRowOffset == nChoiceDateRowOffset):  # 2
+            gstWinningSheet.write(nRowOffset, nDateColOffset, stChoiceDate, stChoiceDateFormat);
+        else:                                       # > 2
+            gstWinningSheet.write(nRowOffset, nDateColOffset, stDateCellString, stPurpleFormat);
 
-        stTransCell = xl_rowcol_to_cell(nRowOffset, nKospiColOffset);
+        stTransCell = xl_rowcol_to_cell(nRowOffset, nKospiColOffset + nKospiChangeOffset);
         stKospiString = u'=' + stSiseCell + stTransCell;
         if (nRowOffset == (nStartGraphRowOffset - 2)):
             gstWinningSheet.write(nRowOffset, nKospiColOffset, stKospiString, stTitleFormat);
@@ -914,7 +947,7 @@ def EXCEL_SetWinningRateGraphXlsxData(nMaxDateCount, nMaxStockCount):
         else:
             gstWinningSheet.write(nRowOffset, nKospiColOffset, stKospiString, stRateFormat);
 
-        stTransCell = xl_rowcol_to_cell(nRowOffset, nKosdaqColOffset + 1);
+        stTransCell = xl_rowcol_to_cell(nRowOffset, nKosdaqColOffset + nKosdaqChangeOffset);
         stKospiString = u'=' + stSiseCell + stTransCell;
         if (nRowOffset == (nStartGraphRowOffset - 2)):
             gstWinningSheet.write(nRowOffset, nKosdaqColOffset, stKospiString, stTitleFormat);
@@ -968,13 +1001,15 @@ def EXCEL_SetWinningRateGraphXlsxData(nMaxDateCount, nMaxStockCount):
 
                 # 년도별 누적 승리율 출력
                 if (nRowOffset == 2) and (nStockIndex < 7):
-                    if (nStockIndex == 0): stString = "=IFERROR(ROUNDUP(INDIRECT(ADDRESS(MATCH(\"11-01-03\", A" + str(nStartFnRowOffset+1) + ":A" + str(stMaxRowOffset) + ", 0)+" + str(nStartFnRowOffset) + "," + str(nKospiVsSumColOffset+1) + "))," + str(nRoundUp) + "),\"\")";
-                    if (nStockIndex == 1): stString = "=IFERROR(ROUNDUP(INDIRECT(ADDRESS(MATCH(\"12-01-02\", A" + str(nStartFnRowOffset+1) + ":A" + str(stMaxRowOffset) + ", 0)+" + str(nStartFnRowOffset) + "," + str(nKospiVsSumColOffset+1) + "))," + str(nRoundUp) + "),\"\")";
-                    if (nStockIndex == 2): stString = "=IFERROR(ROUNDUP(INDIRECT(ADDRESS(MATCH(\"13-01-02\", A" + str(nStartFnRowOffset+1) + ":A" + str(stMaxRowOffset) + ", 0)+" + str(nStartFnRowOffset) + "," + str(nKospiVsSumColOffset+1) + "))," + str(nRoundUp) + "),\"\")";
-                    if (nStockIndex == 3): stString = "=IFERROR(ROUNDUP(INDIRECT(ADDRESS(MATCH(\"14-01-02\", A" + str(nStartFnRowOffset+1) + ":A" + str(stMaxRowOffset) + ", 0)+" + str(nStartFnRowOffset) + "," + str(nKospiVsSumColOffset+1) + "))," + str(nRoundUp) + "),\"\")";
-                    if (nStockIndex == 4): stString = "=IFERROR(ROUNDUP(INDIRECT(ADDRESS(MATCH(\"15-01-02\", A" + str(nStartFnRowOffset+1) + ":A" + str(stMaxRowOffset) + ", 0)+" + str(nStartFnRowOffset) + "," + str(nKospiVsSumColOffset+1) + "))," + str(nRoundUp) + "),\"\")";
-                    if (nStockIndex == 5): stString = "=IFERROR(ROUNDUP(INDIRECT(ADDRESS(MATCH(\"16-01-04\", A" + str(nStartFnRowOffset+1) + ":A" + str(stMaxRowOffset) + ", 0)+" + str(nStartFnRowOffset) + "," + str(nKospiVsSumColOffset+1) + "))," + str(nRoundUp) + "),\"\")";
-                    if (nStockIndex == 6): stString = "=IFERROR(ROUNDUP(INDIRECT(ADDRESS(" + str(stMaxRowOffset) + "," + str(nKospiVsSumColOffset+1) + "))," + str(nRoundUp) + "),\"\")";
+                    stTmpPreString = "=IFERROR(ROUNDUP(INDIRECT(ADDRESS(";
+                    stTmpString = stDateString + str(nStartFnRowOffset+1) + ":" + stDateString + str(stMaxRowOffset) + ", 0)+" + str(nStartFnRowOffset) + "," + str(nKospiVsSumColOffset+1) + "))," + str(nRoundUp) + "),\"\")";
+                    if (nStockIndex == 0): stString = stTmpPreString + "MATCH(\"11-01-03\", " + stTmpString;
+                    if (nStockIndex == 1): stString = stTmpPreString + "MATCH(\"12-01-02\", " + stTmpString;
+                    if (nStockIndex == 2): stString = stTmpPreString + "MATCH(\"13-01-02\", " + stTmpString;
+                    if (nStockIndex == 3): stString = stTmpPreString + "MATCH(\"14-01-02\", " + stTmpString;
+                    if (nStockIndex == 4): stString = stTmpPreString + "MATCH(\"15-01-02\", " + stTmpString;
+                    if (nStockIndex == 5): stString = stTmpPreString + "MATCH(\"16-01-04\", " + stTmpString;
+                    if (nStockIndex == 6): stString = stTmpPreString + str(stMaxRowOffset) + "," + str(nKospiVsSumColOffset+1) + "))," + str(nRoundUp) + "),\"\")";
                     gstWinningSheet.write(nRowOffset, nStockColOffset + nStockIndex, stString);
 
             # 선정 종목 매핑 정보
@@ -1085,8 +1120,8 @@ def EXCEL_SetBenefitGraphXlsxData(nMaxDateCount, nMaxStockCount):
     gstBenefitSheet.write(nGraphRowOffset, nChoiceDateColOffset, u"선정 날짜", stGrayFormat);
     gstBenefitSheet.write(nGraphRowOffset + 1, nChoiceDateColOffset, stString, stGrayFormat);
     for nDateIndex in range(nMaxDateCount):
-        nDateRowOffset = nDateIndex + nStartGraphRowOffset;
-        stCurDateTransCell = xl_rowcol_to_cell(nDateRowOffset, nDateColOffset);
+        nDateRowCellOffset = nDateIndex + nStartGraphRowOffset;
+        stCurDateTransCell = xl_rowcol_to_cell(nDateRowCellOffset, nDateColOffset);
         stChoiceDateTransCell = xl_rowcol_to_cell(nChoiceDateRowOffset, nDateColOffset);
 
         stString = "=IF(AND(";
@@ -1094,7 +1129,7 @@ def EXCEL_SetBenefitGraphXlsxData(nMaxDateCount, nMaxStockCount):
         stString += ", " + stBaseTransCell + " > 0";
         stString += "), 1, 0)";
 
-        gstBenefitSheet.write(nDateRowOffset, nChoiceDateColOffset, stString);
+        gstBenefitSheet.write(nDateRowCellOffset, nChoiceDateColOffset, stString);
 
     # 날짜 / KOSPI
     for nRowOffset in range(nMaxRowOffset):
@@ -1484,9 +1519,10 @@ gstFnSheet.freeze_panes('E3');
 gstFnSheet.set_column('A:B', None, None, {'hidden': 1});
 gstSiseSheet.freeze_panes('F4');
 gstSiseSheet.set_row(0, None, None, {'hidden': True})
-gstWinningSheet.freeze_panes('I4');
+gstWinningSheet.freeze_panes('J4');
 gstWinningSheet.set_row(0, None, None, {'hidden': True})
-gstWinningSheet.set_column('B:H', None, None, {'hidden': True})
+gstWinningSheet.set_column('A:A', None, None, {'hidden': True})
+gstWinningSheet.set_column('C:I', None, None, {'hidden': True})
 gstBenefitSheet.freeze_panes('E4');
 gstBenefitSheet.set_row(0, None, None, {'hidden': True})
 gstBenefitSheet.set_column('A:A', None, None, {'hidden': True})
