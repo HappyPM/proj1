@@ -31,6 +31,8 @@ if ((gnMaxBaeDangStockCount % 2) > 0):
     gnMaxKospiStockCount = gnMaxKospiStockCount + 1;
 gbPrintProgress = 1;
 gbGetLastQuarter = 1;
+gbWinningSheet = 1;
+gbBenefitSheet = 1;
 
 ganYear = [1];
 ganMonth = [1];
@@ -88,7 +90,6 @@ def COMPANY_SetJsonData(stSoup, eFreq_typ, astDataSet, stExpectDataSet):
     astItemNames = stSoup.findAll("th", {"class":"bg txt title "})
     # 재무정보 값 
     astItemValues = stSoup.findAll("td", {"class":"num line "})
-    astItemValuesExpect = stSoup.findAll("td")
 
     nItemLen = len(astItemNames);
     nDayLen = len(astDays);
@@ -222,9 +223,10 @@ def COMPANY_SetBestStockInfor(stStockInfor):
     nAllocOffset = nFieldCount - 4;
     nBestIndicator = 3115000;
     nBestDebt = 150;
-    nBestAlloc = 0;
 
     stStockInfor['BestStock'] = 0;
+    if (stStockInfor['Type'] != u'KOSPI'):
+        return;
 
     for nIndex in range(nAttrCount):
         nCurOffset = (nIndex * nFieldCount) + nIndicatorOffset;
@@ -326,8 +328,6 @@ def COMPANY_SetStockInfor(stStockInfor, tables, nType, nName, nCode):
                     if (float(stStockInfor['1Y']) >= float(stStockInfor['6M'])):
                         stStockInfor['수익률지표'] = stStockInfor['수익률지표'] + 400;
 
-    astYearDataList = [];
-    astQuaterDataList = [];
     COMPANY_GetFinance(stStockInfor['WebCode'], stStockInfor);
 
     stStockInfor['시세'] = {};
@@ -405,7 +405,6 @@ gstAutoFilterEndCell    = 'A2';
 def EXCEL_SetFnXlsxTitle(astStockInfor):
     stStockInfor = astStockInfor[0];
     nStockLen = len(astStockInfor);
-    nXlsxColumnOffset = 0;
     nRowOffset = 0;
     nColOffset = 0;
     nXlsxYear = 0;
@@ -515,11 +514,8 @@ def EXCEL_SetFnXlsxTitle(astStockInfor):
     return stAutoFilterCell;
 
 def EXCEL_SetSiseXlsxTitle(astStockInfor):
-    nXlsxColumnOffset = 0;
     nRowOffset = 1;
     nColOffset = 0;
-    nXlsxYear = 0;
-    nXlsxQuarter= 0;
 
     stTitleFormat = gstWorkBook.add_format({'bold': True, 'font_color': 'blue'});
     stRedTitleFormat = gstWorkBook.add_format({'bold': True, 'font_color': 'red'});
@@ -1062,7 +1058,6 @@ def EXCEL_SetWinningRateGraphXlsxData(nMaxDateCount, nMaxStockCount):
     stEndTransCell = xl_rowcol_to_cell(nMaxRowOffset - 1, nKosdaqOffset);
     stKosdaqSise = '=' + gstSiseSheetName + '!' + stStartTransCell + ":" + stEndTransCell;
 
-    stTitle = xl_rowcol_to_cell(1, nKospiVsSumColOffset);
     stChart.set_title({'name':u"지수"});
     stChart.set_x_axis({'name':u'날짜'});
     stChart.set_y_axis({'name':u'KOSPI지수',   'num_format':'0'});
@@ -1321,9 +1316,10 @@ def EXCEL_WriteExcelFile(astKospiInfor, astKosdaqInfor, astStockInfor):
     PrintProgress(u"[완료] 재무 데이터 출력");
 
     # 이익률 그래프 출력
-    PrintProgress(u"[진행] 이익률 그래프 출력");
-    EXCEL_SetWinningRateGraphXlsxData(len(astKospiInfor), len(astStockInfor));
-    PrintProgress(u"[완료] 이익률 그래프 출력");
+    if (gbWinningSheet > 0):
+        PrintProgress(u"[진행] 이익률 그래프 출력");
+        EXCEL_SetWinningRateGraphXlsxData(len(astKospiInfor), len(astStockInfor));
+        PrintProgress(u"[완료] 이익률 그래프 출력");
     
     # 수익률 그래프 출력
     PrintProgress(u"[진행] 수익률 그래프 출력");
@@ -1335,7 +1331,6 @@ def EXCEL_WriteExcelFile(astKospiInfor, astKosdaqInfor, astStockInfor):
 
 def SISE_GetNonStockInfor(nStockCode, stStockInfor):   # IN (nStock: 종목코드), OUT (stStockInfor: 종목 정보)
     anUrl = "http://vip.mk.co.kr/newSt/rate/kospikosdaq_2.php?sty=2010&stm=5&std=1";
-    stDataInfor = {};
 
     anReqCode               = {};
     anReqCode['KOSPI']      = "&stCode=KPS001";
@@ -1456,8 +1451,6 @@ def COMPANY_GetStockCode(astStockList): # OUT (gastChangeStockNameCodeList: 종�
                 stStockNameCode = {};
                 stStockNameCode['Name'] = astAhref[nStockIndex].text;
 
-                stValues = dict.values(astAhref[nStockIndex].attrs);
-
                 stStockNameCode['Code'] = dict.values(astAhref[nStockIndex].attrs)[0].split('code=')[1];
                 stStockNameCode['Type'] = astrStockType[nStockType];
                 stStockNameCode['SISE'] = 0;
@@ -1501,32 +1494,37 @@ PrintProgress(u"[완료] 파일 출력");
 
 # 종목 정보 출력
 gstWorkBookName     = u'StockList_' + gstDate + u'.xlsx';
-gstFnSheetName      = u'재무' + gstDate;
-gstSiseSheetName    = u'시세' + gstDate;
-gstWinningSheetName   = u'승리율' + gstDate;
-gstBenefitSheetName = u'수익률' + gstDate;
 gstWorkBook         = xlsxwriter.Workbook(gstWorkBookName);
+
+gstFnSheetName      = u'재무' + gstDate;
 gstFnSheet          = gstWorkBook.add_worksheet(gstFnSheetName);
+gstFnSheet.freeze_panes('E3');
+gstFnSheet.set_column('A:B', None, None, {'hidden': 1});
+
+gstSiseSheetName    = u'시세' + gstDate;
 gstSiseSheet        = gstWorkBook.add_worksheet(gstSiseSheetName);
-gstWinningSheet       = gstWorkBook.add_worksheet(gstWinningSheetName);
-gstBenefitSheet     = gstWorkBook.add_worksheet(gstBenefitSheetName);
+gstSiseSheet.freeze_panes('F4');
+gstSiseSheet.set_row(0, None, None, {'hidden': True})
+
+if (gbWinningSheet > 0):
+    gstWinningSheetName   = u'승리율' + gstDate;
+    gstWinningSheet       = gstWorkBook.add_worksheet(gstWinningSheetName);
+    gstWinningSheet.freeze_panes('J4');
+    gstWinningSheet.set_row(0, None, None, {'hidden': True})
+    gstWinningSheet.set_column('A:A', None, None, {'hidden': True})
+    gstWinningSheet.set_column('C:I', None, None, {'hidden': True})
+
+if (gbBenefitSheet > 0):
+    gstBenefitSheetName = u'수익률' + gstDate;
+    gstBenefitSheet     = gstWorkBook.add_worksheet(gstBenefitSheetName);
+    gstBenefitSheet.freeze_panes('E4');
+    gstBenefitSheet.set_row(0, None, None, {'hidden': True})
+    gstBenefitSheet.set_column('A:A', None, None, {'hidden': True})
+    gstBenefitSheet.set_column('C:D', None, None, {'hidden': True})
 
 # 엑셀 출력
 gstAutoFilterEndCell = EXCEL_WriteExcelFile(gastKospiInfor, gastKosdaqInfor, gastStockInfor);
-
 gstFnSheet.autofilter(gstAutoFilterStartCell + ':' + gstAutoFilterEndCell);
-gstFnSheet.freeze_panes('E3');
-gstFnSheet.set_column('A:B', None, None, {'hidden': 1});
-gstSiseSheet.freeze_panes('F4');
-gstSiseSheet.set_row(0, None, None, {'hidden': True})
-gstWinningSheet.freeze_panes('J4');
-gstWinningSheet.set_row(0, None, None, {'hidden': True})
-gstWinningSheet.set_column('A:A', None, None, {'hidden': True})
-gstWinningSheet.set_column('C:I', None, None, {'hidden': True})
-gstBenefitSheet.freeze_panes('E4');
-gstBenefitSheet.set_row(0, None, None, {'hidden': True})
-gstBenefitSheet.set_column('A:A', None, None, {'hidden': True})
-gstBenefitSheet.set_column('C:D', None, None, {'hidden': True})
 
 PrintProgress(u"[시작] 엑셀 출력");
 gstWorkBook.close();
