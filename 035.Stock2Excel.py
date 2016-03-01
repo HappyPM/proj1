@@ -110,7 +110,7 @@ def COMPANY_SetJsonData(stSoup, eFreq_typ, astDataSet, stExpectDataSet):
             if (nDayIndex > 0):
                 nIndicator = nMultipleIndicator;
                 for stIndicatorData in astIndicatorData:
-                    if ((data["item_value"] != '') and (stIndicatorData["item_value"] != '') and (float(data["item_value"]) > 0) and (float(data["item_value"]) >= float(stIndicatorData["item_value"]))):
+                    if ((data["item_value"] != '') and (stIndicatorData["item_value"] != '') and (float(data["item_value"]) > 0) and (float(data["item_value"]) > float(stIndicatorData["item_value"]))):
                         nSumIndicator = nSumIndicator + nIndicator;
                     nIndicator = nIndicator * 2;
                 if (nMultipleIndicator <= 100):
@@ -152,7 +152,7 @@ def COMPANY_SetJsonData(stSoup, eFreq_typ, astDataSet, stExpectDataSet):
             # Next 연간 지표 계산
             nIndicator = nMultipleIndicator;
             for stIndicatorData in astIndicatorData:
-                if ((data["item_value"] != '') and (stIndicatorData["item_value"] != '') and (float(data["item_value"]) > 0) and (float(data["item_value"]) >= float(stIndicatorData["item_value"]))):
+                if ((data["item_value"] != '') and (stIndicatorData["item_value"] != '') and (float(data["item_value"]) > 0) and (float(data["item_value"]) > float(stIndicatorData["item_value"]))):
                     nSumIndicator = nSumIndicator + nIndicator;
                 nIndicator = nIndicator * 2;
 
