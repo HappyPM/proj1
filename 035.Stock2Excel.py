@@ -516,7 +516,7 @@ def EXCEL_SetFnXlsxTitle(astStockInfor):
         nColOffset = nColOffset + 1;
 
     stAutoFilterCell = xl_rowcol_to_cell(1, nColOffset - 1);
-    return stAutoFilterCell;
+    gstFnSheet.autofilter(gstAutoFilterStartCell + ':' + stAutoFilterCell);
 
 def EXCEL_SetSiseXlsxTitle(astStockInfor):
     nRowOffset = 1;
@@ -918,6 +918,15 @@ def EXCEL_SetWinningRateGraphXlsxData(nMaxDateCount, nMaxStockCount):
     stRateFormat = gstWorkBook.add_format({'num_format':'0.000'});
 
     stBaseTransCell = xl_rowcol_to_cell(nGraphRowOffset + 1, nChoiceDateColOffset);
+
+    global gstWinningSheetName;
+    global gstWinningSheet;
+    gstWinningSheetName   = u'승리율' + gstDate;
+    gstWinningSheet       = gstWorkBook.add_worksheet(gstWinningSheetName);
+    gstWinningSheet.freeze_panes('J4');
+    gstWinningSheet.set_row(0, None, None, {'hidden': True})
+    gstWinningSheet.set_column('A:A', None, None, {'hidden': True})
+    gstWinningSheet.set_column('C:I', None, None, {'hidden': True})
     
     # 선정 날짜 기준 현재 수익률 동작 여부
     stString = "=IFERROR(MATCH(" + stChoiceDateCell + ", " + stDateString + str(nStartFnRowOffset+1) + ":" + stDateString + str(stMaxRowOffset) + ", 0) + 3";
@@ -1132,6 +1141,16 @@ def EXCEL_SetBenefitGraphXlsxData(nMaxDateCount, nMaxStockCount):
     stGrayFormat = gstWorkBook.add_format({'bold': True, 'font_color': 'gray'});
     stNavyFormat = gstWorkBook.add_format({'bold': True, 'font_color': 'navy'});
     stRateFormat = gstWorkBook.add_format({'num_format':'0.000'});
+
+    # 엑셀 Sheet 생성
+    global gstBenefitSheetName;
+    global gstBenefitSheet;
+    gstBenefitSheetName = u'수익률' + gstDate;
+    gstBenefitSheet     = gstWorkBook.add_worksheet(gstBenefitSheetName);
+    gstBenefitSheet.freeze_panes('E4');
+    gstBenefitSheet.set_row(0, None, None, {'hidden': True})
+    gstBenefitSheet.set_column('A:A', None, None, {'hidden': True})
+    gstBenefitSheet.set_column('C:D', None, None, {'hidden': True})
     
     # 선정 날짜 기준 현재 수익률 동작 여부
     stString = "=IFERROR(MATCH(" + stChoiceDateCell + ", " + stDateString + str(nStartFnRowOffset+1) + ":" + stDateString + str(stMaxRowOffset) + ", 0) + 3";
@@ -1310,6 +1329,24 @@ def EXCEL_WriteExcelFile(astKospiInfor, astKosdaqInfor, astStockInfor):
     nColOffset = 0;
     nRowOffset = 0;
 
+    global gstWorkBook;
+    gstWorkBookName     = u'StockList_' + gstDate + u'.xlsx';
+    gstWorkBook         = xlsxwriter.Workbook(gstWorkBookName);
+
+    global gstFnSheetName;
+    global gstFnSheet;
+    gstFnSheetName      = u'재무' + gstDate;
+    gstFnSheet          = gstWorkBook.add_worksheet(gstFnSheetName);
+    gstFnSheet.freeze_panes('E3');
+    gstFnSheet.set_column('A:B', None, None, {'hidden': 1});
+
+    global gstSiseSheetName;
+    global gstSiseSheet;
+    gstSiseSheetName    = u'시세' + gstDate;
+    gstSiseSheet        = gstWorkBook.add_worksheet(gstSiseSheetName);
+    gstSiseSheet.freeze_panes('F4');
+    gstSiseSheet.set_row(0, None, None, {'hidden': True})
+
     # 시세 Title 출력
     PrintProgress(u"[진행] 시세 Title 출력");
     EXCEL_SetSiseXlsxTitle(astKospiInfor);
@@ -1330,7 +1367,8 @@ def EXCEL_WriteExcelFile(astKospiInfor, astKosdaqInfor, astStockInfor):
 
     # 재무 Title 출력
     PrintProgress(u"[진행] 재무 Title 출력");
-    stAutoFilter = EXCEL_SetFnXlsxTitle(astStockInfor);
+    EXCEL_SetFnXlsxTitle(astStockInfor);
+    
     nRowOffset = nRowOffset + 2;
     PrintProgress(u"[완료] 재무 Title 출력");
 
@@ -1355,7 +1393,10 @@ def EXCEL_WriteExcelFile(astKospiInfor, astKosdaqInfor, astStockInfor):
         PrintProgress(u"[완료] 수익률 그래프 출력");
     
     PrintProgress(u"[완료] 엑셀 취합");
-    return stAutoFilter;
+    
+    PrintProgress(u"[시작] 엑셀 출력");
+    gstWorkBook.close();
+    PrintProgress(u"[완료] 엑셀 출력");
 
 def SISE_GetNonStockInfor(nStockCode, stStockInfor):   # IN (nStock: 종목코드), OUT (stStockInfor: 종목 정보)
     anUrl = "http://vip.mk.co.kr/newSt/rate/kospikosdaq_2.php?sty=2010&stm=5&std=1";
@@ -1490,6 +1531,7 @@ def COMPANY_GetStockCode(astStockList): # OUT (gastChangeStockNameCodeList: 종�
         PrintProgress(u"[완료] " + astrStockType[nStockType] + u" List 취합");
 
 def FILE_WriteBestStock(astStockInfor):
+    PrintProgress(u"[시작] 파일 출력");
     stBestStockName = u'BestStock_' + gstDate + u'.txt';
     stFile = open(stBestStockName, 'w');
 
@@ -1501,6 +1543,7 @@ def FILE_WriteBestStock(astStockInfor):
             stFile.write(astStockInfor[nStockIndex]['Name'].encode("UTF-8"));
             stFile.write(u'\n');
     stFile.close();
+    PrintProgress(u"[완료] 파일 출력");
 
 ############# main #############
 
@@ -1516,46 +1559,9 @@ COMPANY_GetFinanceInfor(gastChangeStockNameCodeList, gastStockInfor);
 SISE_GetKospiInfor(gastKospiInfor, gastKosdaqInfor);
 
 # Best 종목 txt 출력
-PrintProgress(u"[시작] 파일 출력");
 FILE_WriteBestStock(gastStockInfor);
-PrintProgress(u"[완료] 파일 출력");
-
-# 종목 정보 출력
-gstWorkBookName     = u'StockList_' + gstDate + u'.xlsx';
-gstWorkBook         = xlsxwriter.Workbook(gstWorkBookName);
-
-gstFnSheetName      = u'재무' + gstDate;
-gstFnSheet          = gstWorkBook.add_worksheet(gstFnSheetName);
-gstFnSheet.freeze_panes('E3');
-gstFnSheet.set_column('A:B', None, None, {'hidden': 1});
-
-gstSiseSheetName    = u'시세' + gstDate;
-gstSiseSheet        = gstWorkBook.add_worksheet(gstSiseSheetName);
-gstSiseSheet.freeze_panes('F4');
-gstSiseSheet.set_row(0, None, None, {'hidden': True})
-
-if (gbWinningSheet > 0):
-    gstWinningSheetName   = u'승리율' + gstDate;
-    gstWinningSheet       = gstWorkBook.add_worksheet(gstWinningSheetName);
-    gstWinningSheet.freeze_panes('J4');
-    gstWinningSheet.set_row(0, None, None, {'hidden': True})
-    gstWinningSheet.set_column('A:A', None, None, {'hidden': True})
-    gstWinningSheet.set_column('C:I', None, None, {'hidden': True})
-
-if (gbBenefitSheet > 0):
-    gstBenefitSheetName = u'수익률' + gstDate;
-    gstBenefitSheet     = gstWorkBook.add_worksheet(gstBenefitSheetName);
-    gstBenefitSheet.freeze_panes('E4');
-    gstBenefitSheet.set_row(0, None, None, {'hidden': True})
-    gstBenefitSheet.set_column('A:A', None, None, {'hidden': True})
-    gstBenefitSheet.set_column('C:D', None, None, {'hidden': True})
 
 # 엑셀 출력
-gstAutoFilterEndCell = EXCEL_WriteExcelFile(gastKospiInfor, gastKosdaqInfor, gastStockInfor);
-gstFnSheet.autofilter(gstAutoFilterStartCell + ':' + gstAutoFilterEndCell);
-
-PrintProgress(u"[시작] 엑셀 출력");
-gstWorkBook.close();
-PrintProgress(u"[완료] 엑셀 출력");
+EXCEL_WriteExcelFile(gastKospiInfor, gastKosdaqInfor, gastStockInfor);
 
 PrintProgress(u"Complete all process");
