@@ -88,9 +88,13 @@ def COMPANY_SetJsonData(stSoup, eFreq_typ, astDataSet, stExpectDataSet):
 
     # 재무정보 타이틀
     astItemNames = stSoup.findAll("th", {"class":"bg txt title "})
+    astItemNamesLast = stSoup.findAll("th", {"class":"bg txt title line-bottom"})
+    astItemNames = astItemNames + astItemNamesLast;
     # 재무정보 값 
     astItemValues = stSoup.findAll("td", {"class":"num line "})
-
+    astItemValuesLast = stSoup.findAll("td", {"class":"num line line-bottom"})
+    astItemValues = astItemValues + astItemValuesLast;
+    
     nItemLen = len(astItemNames);
     nDayLen = len(astDays);
     for nItemIndex in range(nItemLen):
@@ -162,7 +166,7 @@ def COMPANY_SetJsonData(stSoup, eFreq_typ, astDataSet, stExpectDataSet):
         stAppendData["item_name"] = astItemNames[nItemIndex].text;
         stAppendData["item_value"] = unicode(nSumIndicator % 100000);
         astDataSet.append(stAppendData);
-        # 지표 추가
+        # 지표 추가 (예측 포함)
         stAppendData = {};
         stAppendData["day"] = u"지표/지표";
         stAppendData["item_name"] = astItemNames[nItemIndex].text;
@@ -333,12 +337,11 @@ def COMPANY_SetStockInfor(stStockInfor, tables, nType, nName, nCode):
                     if (float(stStockInfor['1Y']) >= float(stStockInfor['6M'])):
                         stStockInfor['수익률지표'] = stStockInfor['수익률지표'] + 400;
 
-    COMPANY_GetFinance(stStockInfor['WebCode'], stStockInfor);
-
     stStockInfor['시세'] = {};
     bRet = SISE_GetStockInfor(nCode, nType, stStockInfor['시세']);
 
     if (bRet > 0):
+        COMPANY_GetFinance(stStockInfor['WebCode'], stStockInfor);
         COMPANY_SetBestStockInfor(stStockInfor);
 
     return bRet;
