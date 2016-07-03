@@ -256,13 +256,14 @@ def COMPANY_SetBestStockInfor(stStockInfor):
         return;
     if ((float(stStockInfor['PBR']) >= nBestCurPBR) or (float(stStockInfor['PBR']) < 0)):
         return;
-        
+    if ((float(stStockInfor['PER']) < 0)):
+        return;
         
     for nIndex in range(nAttrCount):
         nCurOffset = (nIndex * nQuaterFieldCount) + nQuaterIndicatorOffset;
         nBestStockType = COMPANY_CheckBestStockInfor(stStockInfor['QuaterDataList'][nCurOffset]["item_name"]);
         if (nBestStockType == 1):
-            if (float(stStockInfor['QuaterDataList'][nCurOffset]["item_value"]) <= nQuaterBestIndicator):
+            if (float(stStockInfor['QuaterDataList'][nCurOffset]["item_value"]) < nQuaterBestIndicator):
                 return;
                 
             # 최근 1년 실적이 과거 3년 평균보다 적은지 여부
@@ -343,18 +344,28 @@ def COMPANY_SetStockInfor(stStockInfor, tables, nType, nName, nCode):
 
     stSplitEPS = astSplit[nIndexEPS].split(' ');
     stStockInfor['EPS'] = stSplitEPS[1].replace(',', '');
-
+    if (stStockInfor['EPS'] == u''):
+        return 0;
+        
     stSplitBPS = astSplit[nIndexBPS].split(' ');
     stStockInfor['BPS'] = stSplitBPS[1].replace(',', '');
+    if (stStockInfor['BPS'] == u''):
+        return 0;
 
     stSplitPER = astSplit[nIndexPER].split(' ');
     stStockInfor['PER'] = stSplitPER[1].replace(',', '');
+    if (stStockInfor['PER'] == u''):
+        return 0;
 
     stSplitPBR = astSplit[nIndexPBR].split(' ');
     stStockInfor['PBR'] = stSplitPBR[1].replace(',', '');
+    if (stStockInfor['PBR'] == u''):
+        return 0;
 
     stSplitBaeDang = astSplit[nIndexBaeDang].split(' ');
     stStockInfor['배당률'] = stSplitBaeDang[1].replace('%', '');
+    if (stStockInfor['배당률'] == u''):
+        return 0;
 
     astTable4Len = len(astTable4);
     astTable4_1M = astTable4[astTable4Len - 4].split(u'\n');
@@ -386,12 +397,11 @@ def COMPANY_SetStockInfor(stStockInfor, tables, nType, nName, nCode):
                     if (float(stStockInfor['1Y']) >= float(stStockInfor['6M'])):
                         stStockInfor['수익률지표'] = stStockInfor['수익률지표'] + 400;
 
-    COMPANY_GetFinance(stStockInfor['WebCode'], stStockInfor);
-
     stStockInfor['시세'] = {};
     bRet = SISE_GetStockInfor(nCode, nType, stStockInfor['시세']);
 
     if (bRet > 0):
+        COMPANY_GetFinance(stStockInfor['WebCode'], stStockInfor);
         COMPANY_SetBestStockInfor(stStockInfor);
 
     return bRet;
@@ -1601,6 +1611,9 @@ def FILE_WriteBestStock(astStockInfor):
 ############# main #############
 
 gstDate = GetTodayString(ganYear, ganMonth, ganDay);
+
+#bRet = COMPANY_GetStockFinanceInfor('KOSPI', u'인포바인', u'115310', gastStockInfor);
+
 
 # 종목 코드 리스트 취합
 COMPANY_GetStockCode(gastChangeStockNameCodeList);
