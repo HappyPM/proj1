@@ -201,6 +201,7 @@ def COMPANY_CheckBestStockInfor(stItemName):
     astBestItemName = [u"매출액", u"영업이익", u"영업이익률"];
     astBestDebtName = [u"부채비율"];
     astBestAllocName = [u"현금배당수익률"];
+    astBestPbrName = [u"PBR(배)"];
     
     nLen = len(astBestItemName);
     for nIndex in range(nLen):
@@ -217,6 +218,11 @@ def COMPANY_CheckBestStockInfor(stItemName):
         if (astBestAllocName[nIndex] == stItemName):
             return 3;
 
+    nLen = len(astBestPbrName);
+    for nIndex in range(nLen):
+        if (astBestPbrName[nIndex] == stItemName):
+            return 4;
+
     return 0;
 
 def COMPANY_SetBestStockInfor(stStockInfor):
@@ -232,17 +238,44 @@ def COMPANY_SetBestStockInfor(stStockInfor):
     nYearBestIndicator = 3115000;
     nQuaterBestIndicator = 15000;
     nBestDebt = 150;
-
+    nBestCurBenefit = 20;
+    nBestCurPBR = 3;
+    
     stStockInfor['BestStock'] = 0;
-    if (stStockInfor['Type'] != u'KOSPI'):
-        return;
+    
+# 코스피 제외
+#    if (stStockInfor['Type'] != u'KOSPI'):
+#        return;
 
+#최근 수익률 제외 (1M / 3M / 6M)
+    if (float(stStockInfor['1M']) >= nBestCurBenefit):
+        return;
+    if (float(stStockInfor['3M']) >= nBestCurBenefit):
+        return;
+    if (float(stStockInfor['6M']) >= nBestCurBenefit):
+        return;
+    if ((float(stStockInfor['PBR']) >= nBestCurPBR) or (float(stStockInfor['PBR']) < 0)):
+        return;
+        
+        
     for nIndex in range(nAttrCount):
         nCurOffset = (nIndex * nQuaterFieldCount) + nQuaterIndicatorOffset;
         nBestStockType = COMPANY_CheckBestStockInfor(stStockInfor['QuaterDataList'][nCurOffset]["item_name"]);
         if (nBestStockType == 1):
             if (float(stStockInfor['QuaterDataList'][nCurOffset]["item_value"]) <= nQuaterBestIndicator):
                 return;
+                
+            # 최근 1년 실적이 과거 3년 평균보다 적은지 여부
+            nCurYearOffset = nIndex * nYearFieldCount;
+            nPreYearAverage = (float(stStockInfor['YearDataList'][nCurYearOffset]["item_value"]) +
+                                float(stStockInfor['YearDataList'][nCurYearOffset + 1]["item_value"]) +
+                                float(stStockInfor['YearDataList'][nCurYearOffset + 2]["item_value"])) / 3;
+            nErrorRangeAverage = nPreYearAverage * 0.9;
+            nCurValue = float(stStockInfor['YearDataList'][nCurYearOffset + 4]["item_value"]);
+            
+            if (nCurValue < nErrorRangeAverage):
+                return;
+                
             continue;
 
         nCurOffset = (nIndex * nQuaterFieldCount) + nQuaterDebtOffset;
@@ -257,6 +290,22 @@ def COMPANY_SetBestStockInfor(stStockInfor):
         if (nBestStockType == 3):
             if (float(stStockInfor['YearDataList'][nCurOffset]["item_value"]) <= 0):
                 return;
+            continue;
+
+        nCurOffset = (nIndex * nYearFieldCount);
+        nBestStockType = COMPANY_CheckBestStockInfor(stStockInfor['YearDataList'][nCurOffset]["item_name"]);
+        if (nBestStockType == 4):
+            # 최근 1년이 과거 3년 평균보다 고평가 여부
+            nCurYearOffset = nIndex * nYearFieldCount;
+            nPreYearAverage = (float(stStockInfor['YearDataList'][nCurYearOffset]["item_value"]) +
+                                float(stStockInfor['YearDataList'][nCurYearOffset + 1]["item_value"]) +
+                                float(stStockInfor['YearDataList'][nCurYearOffset + 2]["item_value"])) / 3;
+            nErrorRangeAverage = nPreYearAverage * 1.1;
+            nCurValue = float(stStockInfor['YearDataList'][nCurYearOffset + 4]["item_value"]);
+            
+            if (nCurValue > nErrorRangeAverage):
+                return;
+            
             continue;
 
     stStockInfor['BestStock'] = 1;
@@ -337,11 +386,12 @@ def COMPANY_SetStockInfor(stStockInfor, tables, nType, nName, nCode):
                     if (float(stStockInfor['1Y']) >= float(stStockInfor['6M'])):
                         stStockInfor['수익률지표'] = stStockInfor['수익률지표'] + 400;
 
+    COMPANY_GetFinance(stStockInfor['WebCode'], stStockInfor);
+
     stStockInfor['시세'] = {};
     bRet = SISE_GetStockInfor(nCode, nType, stStockInfor['시세']);
 
     if (bRet > 0):
-        COMPANY_GetFinance(stStockInfor['WebCode'], stStockInfor);
         COMPANY_SetBestStockInfor(stStockInfor);
 
     return bRet;
