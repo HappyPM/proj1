@@ -374,9 +374,17 @@ def COMPANY_SetStockInfor(stStockInfor, tables, nType, nName, nCode):
     astTable4_1Y = astTable4[astTable4Len - 1].split(u'\n');
 
     stStockInfor['1M'] = astTable4_1M[len(astTable4_1M) - 1].replace('\r', '').replace(' ', '').replace(',', '').replace('%', '').replace('\t', '');
+    if (stStockInfor['1M'] == u''):
+        return 0;
     stStockInfor['3M'] = astTable4_3M[len(astTable4_3M) - 1].replace('\r', '').replace(' ', '').replace(',', '').replace('%', '').replace('\t', '');
+    if (stStockInfor['3M'] == u''):
+        return 0;
     stStockInfor['6M'] = astTable4_6M[len(astTable4_6M) - 1].replace('\r', '').replace(' ', '').replace(',', '').replace('%', '').replace('\t', '');
+    if (stStockInfor['6M'] == u''):
+        return 0;
     stStockInfor['1Y'] = astTable4_1Y[0].replace('\r', '').replace(' ', '').replace(',', '').replace(',', '').replace('%', '').replace('\t', '');
+    if (stStockInfor['1Y'] == u''):
+        return 0;
     stStockInfor['수익률지표'] = int(0);
     if (stStockInfor['1M'] != ''):
         if (stStockInfor['3M'] != ''):
@@ -1612,7 +1620,7 @@ def FILE_WriteBestStock(astStockInfor):
 
 gstDate = GetTodayString(ganYear, ganMonth, ganDay);
 
-#bRet = COMPANY_GetStockFinanceInfor('KOSPI', u'인포바인', u'115310', gastStockInfor);
+#bRet = COMPANY_GetStockFinanceInfor('KOSPI', u'골든브릿지제4호스팩', u'227950', gastStockInfor);
 
 
 # 종목 코드 리스트 취합
