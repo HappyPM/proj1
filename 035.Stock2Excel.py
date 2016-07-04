@@ -268,6 +268,11 @@ def COMPANY_SetBestStockInfor(stStockInfor):
                 
             # 최근 1년 실적이 과거 3년 평균보다 적은지 여부
             nCurYearOffset = nIndex * nYearFieldCount;
+            if ((stStockInfor['YearDataList'][nCurYearOffset]["item_value"] == u'') or
+                (stStockInfor['YearDataList'][nCurYearOffset + 1]["item_value"] == u'') or
+                (stStockInfor['YearDataList'][nCurYearOffset + 2]["item_value"] == u'')):
+                return;
+                
             nPreYearAverage = (float(stStockInfor['YearDataList'][nCurYearOffset]["item_value"]) +
                                 float(stStockInfor['YearDataList'][nCurYearOffset + 1]["item_value"]) +
                                 float(stStockInfor['YearDataList'][nCurYearOffset + 2]["item_value"])) / 3;
@@ -282,6 +287,8 @@ def COMPANY_SetBestStockInfor(stStockInfor):
         nCurOffset = (nIndex * nQuaterFieldCount) + nQuaterDebtOffset;
         nBestStockType = COMPANY_CheckBestStockInfor(stStockInfor['QuaterDataList'][nCurOffset]["item_name"]);
         if (nBestStockType == 2):
+            if (stStockInfor['QuaterDataList'][nCurOffset]["item_value"] == u''):
+                return;
             if (float(stStockInfor['QuaterDataList'][nCurOffset]["item_value"]) >= nBestDebt):
                 return;
             continue;
@@ -289,6 +296,8 @@ def COMPANY_SetBestStockInfor(stStockInfor):
         nCurOffset = (nIndex * nYearFieldCount) + nYearAllocOffset;
         nBestStockType = COMPANY_CheckBestStockInfor(stStockInfor['YearDataList'][nCurOffset]["item_name"]);
         if (nBestStockType == 3):
+            if (stStockInfor['YearDataList'][nCurOffset]["item_value"] == u''):
+                return;
             if (float(stStockInfor['YearDataList'][nCurOffset]["item_value"]) <= 0):
                 return;
             continue;
@@ -298,10 +307,19 @@ def COMPANY_SetBestStockInfor(stStockInfor):
         if (nBestStockType == 4):
             # 최근 1년이 과거 3년 평균보다 고평가 여부
             nCurYearOffset = nIndex * nYearFieldCount;
+            if ((stStockInfor['YearDataList'][nCurYearOffset]["item_value"] == u'') or
+                (stStockInfor['YearDataList'][nCurYearOffset + 1]["item_value"] == u'') or
+                (stStockInfor['YearDataList'][nCurYearOffset + 2]["item_value"] == u'')):
+                return;
+                
             nPreYearAverage = (float(stStockInfor['YearDataList'][nCurYearOffset]["item_value"]) +
                                 float(stStockInfor['YearDataList'][nCurYearOffset + 1]["item_value"]) +
                                 float(stStockInfor['YearDataList'][nCurYearOffset + 2]["item_value"])) / 3;
             nErrorRangeAverage = nPreYearAverage * 1.1;
+            
+            if (stStockInfor['YearDataList'][nCurYearOffset + 4]["item_value"] == u''):
+                return;
+                
             nCurValue = float(stStockInfor['YearDataList'][nCurYearOffset + 4]["item_value"]);
             
             if (nCurValue > nErrorRangeAverage):
