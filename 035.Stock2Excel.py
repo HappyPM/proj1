@@ -238,8 +238,8 @@ def COMPANY_SetBestStockInfor(stStockInfor):
     nYearBestIndicator = 3115000;
     nQuaterBestIndicator = 15000;
     nBestDebt = 150;
-    nBestCurBenefit = 20;
-    nBestCurPBR = 3;
+    nBestCurBenefit = 35;
+    nBestCurPBR = 1;
     
     stStockInfor['BestStock'] = 0;
     
@@ -248,47 +248,50 @@ def COMPANY_SetBestStockInfor(stStockInfor):
 #        return;
 
 #최근 수익률 제외 (1M / 3M / 6M)
-    if (float(stStockInfor['1M']) >= nBestCurBenefit):
-        return;
-    if (float(stStockInfor['3M']) >= nBestCurBenefit):
-        return;
-    if (float(stStockInfor['6M']) >= nBestCurBenefit):
-        return;
+#    if (float(stStockInfor['1M']) >= nBestCurBenefit):
+#        return;
+#    if (float(stStockInfor['3M']) >= nBestCurBenefit):
+#        return;
+#    if (float(stStockInfor['6M']) >= nBestCurBenefit):
+#        return;
+    # 현재 PBR <= 1
     if ((float(stStockInfor['PBR']) >= nBestCurPBR) or (float(stStockInfor['PBR']) < 0)):
         return;
-    if ((float(stStockInfor['PER']) < 0)):
-        return;
+#    if ((float(stStockInfor['PER']) < 0)):
+#        return;
         
     for nIndex in range(nAttrCount):
         nCurOffset = (nIndex * nQuaterFieldCount) + nQuaterIndicatorOffset;
         nBestStockType = COMPANY_CheckBestStockInfor(stStockInfor['QuaterDataList'][nCurOffset]["item_name"]);
         if (nBestStockType == 1):
+            # 최근 분기 실적 >= 이전 분기 (매출액, 영업이익, 영업이익률)
             if (float(stStockInfor['QuaterDataList'][nCurOffset]["item_value"]) < nQuaterBestIndicator):
                 return;
                 
             # 최근 1년 실적이 과거 3년 평균보다 적은지 여부
-            nCurYearOffset = nIndex * nYearFieldCount;
-            if ((stStockInfor['YearDataList'][nCurYearOffset]["item_value"] == u'') or
-                (stStockInfor['YearDataList'][nCurYearOffset + 1]["item_value"] == u'') or
-                (stStockInfor['YearDataList'][nCurYearOffset + 2]["item_value"] == u'')):
-                return;
+#            nCurYearOffset = nIndex * nYearFieldCount;
+#            if ((stStockInfor['YearDataList'][nCurYearOffset]["item_value"] == u'') or
+#                (stStockInfor['YearDataList'][nCurYearOffset + 1]["item_value"] == u'') or
+#                (stStockInfor['YearDataList'][nCurYearOffset + 2]["item_value"] == u'')):
+#                return;
                 
-            nPreYearAverage = (float(stStockInfor['YearDataList'][nCurYearOffset]["item_value"]) +
-                                float(stStockInfor['YearDataList'][nCurYearOffset + 1]["item_value"]) +
-                                float(stStockInfor['YearDataList'][nCurYearOffset + 2]["item_value"])) / 3;
-            nErrorRangeAverage = nPreYearAverage * 0.9;
-            nCurValue = float(stStockInfor['YearDataList'][nCurYearOffset + 4]["item_value"]);
+#            nPreYearAverage = (float(stStockInfor['YearDataList'][nCurYearOffset]["item_value"]) +
+#                                float(stStockInfor['YearDataList'][nCurYearOffset + 1]["item_value"]) +
+#                                float(stStockInfor['YearDataList'][nCurYearOffset + 2]["item_value"])) / 3;
+#            nErrorRangeAverage = nPreYearAverage * 0.8;
+#            nCurValue = float(stStockInfor['YearDataList'][nCurYearOffset + 4]["item_value"]);
             
-            if (nCurValue < nErrorRangeAverage):
-                return;
+#            if (nCurValue < nErrorRangeAverage):
+#                return;
                 
-            continue;
+#            continue;
 
         nCurOffset = (nIndex * nQuaterFieldCount) + nQuaterDebtOffset;
         nBestStockType = COMPANY_CheckBestStockInfor(stStockInfor['QuaterDataList'][nCurOffset]["item_name"]);
         if (nBestStockType == 2):
             if (stStockInfor['QuaterDataList'][nCurOffset]["item_value"] == u''):
                 return;
+            # 최근 분기 부채비율 < 150
             if (float(stStockInfor['QuaterDataList'][nCurOffset]["item_value"]) >= nBestDebt):
                 return;
             continue;
@@ -298,34 +301,36 @@ def COMPANY_SetBestStockInfor(stStockInfor):
         if (nBestStockType == 3):
             if (stStockInfor['YearDataList'][nCurOffset]["item_value"] == u''):
                 return;
+            # 최근 연간 현금배당수익률 > 0
             if (float(stStockInfor['YearDataList'][nCurOffset]["item_value"]) <= 0):
                 return;
             continue;
 
-        nCurOffset = (nIndex * nYearFieldCount);
-        nBestStockType = COMPANY_CheckBestStockInfor(stStockInfor['YearDataList'][nCurOffset]["item_name"]);
-        if (nBestStockType == 4):
-            # 최근 1년이 과거 3년 평균보다 고평가 여부
-            nCurYearOffset = nIndex * nYearFieldCount;
-            if ((stStockInfor['YearDataList'][nCurYearOffset]["item_value"] == u'') or
-                (stStockInfor['YearDataList'][nCurYearOffset + 1]["item_value"] == u'') or
-                (stStockInfor['YearDataList'][nCurYearOffset + 2]["item_value"] == u'')):
-                return;
+#        nCurOffset = (nIndex * nYearFieldCount);
+#        nBestStockType = COMPANY_CheckBestStockInfor(stStockInfor['YearDataList'][nCurOffset]["item_name"]);
+#        if (nBestStockType == 4):
+#            # 최근 1년이 과거 3년 평균보다 고평가 여부
+#            nCurYearOffset = nIndex * nYearFieldCount;
+#            if ((stStockInfor['YearDataList'][nCurYearOffset]["item_value"] == u'') or
+#                (stStockInfor['YearDataList'][nCurYearOffset + 1]["item_value"] == u'') or
+#                (stStockInfor['YearDataList'][nCurYearOffset + 2]["item_value"] == u'')):
+#                return;
                 
-            nPreYearAverage = (float(stStockInfor['YearDataList'][nCurYearOffset]["item_value"]) +
-                                float(stStockInfor['YearDataList'][nCurYearOffset + 1]["item_value"]) +
-                                float(stStockInfor['YearDataList'][nCurYearOffset + 2]["item_value"])) / 3;
-            nErrorRangeAverage = nPreYearAverage * 1.1;
+#            nPreYearAverage = (float(stStockInfor['YearDataList'][nCurYearOffset]["item_value"]) +
+#                                float(stStockInfor['YearDataList'][nCurYearOffset + 1]["item_value"]) +
+#                                float(stStockInfor['YearDataList'][nCurYearOffset + 2]["item_value"])) / 3;
+#            nErrorRangeAverage = nPreYearAverage * 1.3;
             
-            if (stStockInfor['YearDataList'][nCurYearOffset + 4]["item_value"] == u''):
-                return;
+#            if (stStockInfor['YearDataList'][nCurYearOffset + 4]["item_value"] == u''):
+#                return;
                 
-            nCurValue = float(stStockInfor['YearDataList'][nCurYearOffset + 4]["item_value"]);
+#            nCurValue = float(stStockInfor['YearDataList'][nCurYearOffset + 4]["item_value"]);
+#            nCurValue = float(stStockInfor['PBR']);
             
-            if (nCurValue > nErrorRangeAverage):
-                return;
+#            if (nCurValue > nErrorRangeAverage):
+#                return;
             
-            continue;
+#            continue;
 
     stStockInfor['BestStock'] = 1;
 
@@ -1015,7 +1020,7 @@ def EXCEL_SetWinningRateGraphXlsxData(nMaxDateCount, nMaxStockCount):
     gstWinningSheet.freeze_panes('J4');
     gstWinningSheet.set_row(0, None, None, {'hidden': True})
     gstWinningSheet.set_column('A:A', None, None, {'hidden': True})
-    gstWinningSheet.set_column('C:I', None, None, {'hidden': True})
+#    gstWinningSheet.set_column('C:I', None, None, {'hidden': True})
     
     # 선정 날짜 기준 현재 수익률 동작 여부
     stString = "=IFERROR(MATCH(" + stChoiceDateCell + ", " + stDateString + str(nStartFnRowOffset+1) + ":" + stDateString + str(stMaxRowOffset) + ", 0) + 3";
@@ -1140,7 +1145,8 @@ def EXCEL_SetWinningRateGraphXlsxData(nMaxDateCount, nMaxStockCount):
     # 차트 출력
     # 누적 승리율
     stChart = gstWorkBook.add_chart({'type':'line'});
-    stGraphCell = xl_rowcol_to_cell(nStartGraphRowOffset, nStockColOffset);
+#    stGraphCell = xl_rowcol_to_cell(nStartGraphRowOffset, nStockColOffset);
+    stGraphCell = xl_rowcol_to_cell(nStartGraphRowOffset, nDateColOffset);
 
     stStartTransCell = xl_rowcol_to_cell(nStartGraphRowOffset, nKospiVsSumColOffset);
     stEndTransCell = xl_rowcol_to_cell(nMaxRowOffset - 1, nKospiVsSumColOffset);
@@ -1169,7 +1175,8 @@ def EXCEL_SetWinningRateGraphXlsxData(nMaxDateCount, nMaxStockCount):
 
     # KOSPI / KOSDAQ 지수
     stChart = gstWorkBook.add_chart({'type':'line'});
-    stGraphCell = xl_rowcol_to_cell(nStartGraphRowOffset + 36, nStockColOffset);
+#    stGraphCell = xl_rowcol_to_cell(nStartGraphRowOffset + 36, nStockColOffset);
+    stGraphCell = xl_rowcol_to_cell(nStartGraphRowOffset + 36, nDateColOffset);
 
     stStartTransCell = xl_rowcol_to_cell(nStartGraphRowOffset, nKospiOffset);
     stEndTransCell = xl_rowcol_to_cell(nMaxRowOffset - 1, nKospiOffset);
@@ -1639,6 +1646,11 @@ def FILE_WriteBestStock(astStockInfor):
 gstDate = GetTodayString(ganYear, ganMonth, ganDay);
 
 #bRet = COMPANY_GetStockFinanceInfor('KOSPI', u'골든브릿지제4호스팩', u'227950', gastStockInfor);
+#bRet = COMPANY_GetStockFinanceInfor('KOSPI', u'강원랜드', u'035250', gastStockInfor);
+#bRet = COMPANY_GetStockFinanceInfor('KOSPI', u'태양금속', u'004100', gastStockInfor);
+#bRet = COMPANY_GetStockFinanceInfor('KOSPI', u'신도리코', u'029530', gastStockInfor);
+
+
 
 
 # 종목 코드 리스트 취합
