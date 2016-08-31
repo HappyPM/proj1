@@ -1212,6 +1212,7 @@ def EXCEL_SetCandleTradeData():
     nDataRowOffset = 1;
     nColOffset = 0;
     bPrintLog = 0;
+    nDivideCount = 1;
 
     global gastChartPriceInfor;
 
@@ -1235,7 +1236,7 @@ def EXCEL_SetCandleTradeData():
     stChoiceFormat = gstWorkBook.add_format({'bold': True, 'font_color': 'black'});
     stPlusFormat = gstWorkBook.add_format({'font_color': 'red', 'num_format':'0.00'});
     stMinusFormat = gstWorkBook.add_format({'font_color': 'blue', 'num_format':'0.00'});
-    stRateFormat = gstWorkBook.add_format({'num_format':'0.000'});
+    stRateFormat = gstWorkBook.add_format({'num_format':'0.00'});
     stPlusRateFormat = gstWorkBook.add_format({'font_color': 'red'});
     stMinusRateFormat = gstWorkBook.add_format({'font_color': 'blue'});
 
@@ -1285,6 +1286,9 @@ def EXCEL_SetCandleTradeData():
     nColOffset = nColOffset + 1;
     nColOffset = nColOffset + 1;
 
+    stString = u'종목분산';
+    gstCandleSheet.write(nTitleRowOffset, nColOffset, stString);
+    nColOffset = nColOffset + 1;
     stString = u'세금포함';
     gstCandleSheet.write(nTitleRowOffset, nColOffset, stString);
     nColOffset = nColOffset + 1;
@@ -1357,17 +1361,23 @@ def EXCEL_SetCandleTradeData():
         nColOffset = nColOffset + 1;
         nColOffset = nColOffset + 1;
         
+        # 종목 분산
+        if (nIndex == 0):
+            gstCandleSheet.write(nRowOffset, nColOffset, nDivideCount);
+            nDiviceRowOffset = nRowOffset;
+            nDiviceColOffset = nColOffset;
+        nColOffset = nColOffset + 1;
+        
         # 세금 포함
         nTex = 0.5;
         stTransCell = xl_rowcol_to_cell(nRowOffset, nBenefitColOffset);
-        stString = '=' + stTransCell + '-' + str(nTex);
-        gstCandleSheet.write(nRowOffset, nColOffset, stString);
+        stDivideCell = xl_rowcol_to_cell(nDiviceRowOffset, nDiviceColOffset);
+        stString = '=(' + stTransCell + '-' + str(nTex) + ') / ' + stDivideCell;
+        gstCandleSheet.write(nRowOffset, nColOffset, stString, stRateFormat);
         nTexColOffset = nColOffset;
         nColOffset = nColOffset + 1;
         
         # 변환 수익
-        nTex = 0.5;
-        stRateFormat = gstWorkBook.add_format({'num_format':'0.000'});
         stTransCell = xl_rowcol_to_cell(nRowOffset, nTexColOffset);
         stString = '=' + '1 + (' + stTransCell + ' / 100)';
         gstCandleSheet.write(nRowOffset, nColOffset, stString, stRateFormat);
@@ -1375,8 +1385,6 @@ def EXCEL_SetCandleTradeData():
         nColOffset = nColOffset + 1;
         
         # 누적 수익
-        nTex = 0.5;
-        stRateFormat = gstWorkBook.add_format({'num_format':'0.00'});
         stTransCell = xl_rowcol_to_cell(nRowOffset, nTransColOffset);
         stPrevTransCell = xl_rowcol_to_cell(nRowOffset + 1, nColOffset);
         stString = '=' + stTransCell + ' * ' + stPrevTransCell;
